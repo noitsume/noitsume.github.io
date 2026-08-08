@@ -1,0 +1,53 @@
+KENANGIN PATCH 0 — FOUNDATION
+
+Core
+- package.json
+- tsconfig.json
+- next-env.d.ts
+- next.config.ts
+- eslint.config.mjs
+- postcss.config.mjs
+- .gitignore
+- .env.example
+
+App
+- app/layout.tsx
+- app/page.tsx
+- app/globals.css
+
+Domain contracts
+- Room + recipientName + occasionId
+- Media / MediaInstance / Aura
+- Theme
+- UserProfile
+- Submission
+- Analytics
+- EventDefinition
+- BakeJob
+- ReceiverManifest
+- Wish
+
+Repository boundaries
+- Room
+- Media
+- Submission
+- Theme
+- Analytics
+- User
+- Event
+
+Mock implementation
+- User Kevin
+- 2 working rooms
+- themes
+- upcoming events
+- repository provider
+
+Domain helpers
+- derived Dashboard Room status
+- Room sorting
+
+Environment
+- Zod schemas
+- client env reader
+- server-only env reader
