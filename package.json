@@ -2,6 +2,9 @@
   "name": "kenangin",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,22 +12,34 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm run build"
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "firebase:login": "firebase login",
+    "firebase:emulators": "firebase emulators:start --only auth,firestore",
+    "firebase:deploy": "firebase deploy --only firestore:rules,firestore:indexes",
+    "seed:dev": "node --env-file=.env.local scripts/seed-dev.mjs",
+    "b2:cors": "node --env-file=.env.local scripts/configure-b2-cors.mjs",
+    "infra:check": "node --env-file=.env.local scripts/infra-check.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1095.0",
+    "@aws-sdk/s3-request-presigner": "3.1095.0",
+    "@google/genai": "2.13.0",
+    "firebase": "12.16.0",
+    "firebase-admin": "14.2.0",
     "next": "16.2.12",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.12",
-    "typescript": "6.0.3",
-    "@tailwindcss/postcss": "4.3.3",
-    "tailwindcss": "4.3.3"
+    "firebase-tools": "15.24.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3"
   }
 }

@@ -1,0 +1,60 @@
+KENANGIN PATCH 1 — COMPLETE / AUDITED / SPREADING-LIGHT REVISION
+=====================================
+
+FOUNDATION RETAINED FROM PATCH 0
+- Domain contracts
+- Repository interfaces
+- Mock providers + seed
+- Environment validation
+- Next.js / TypeScript / ESLint / Tailwind baseline
+
+PATCH 1 SYSTEMS
+- config/brand.ts
+- components/ui/*
+- components/theme/*
+- components/shell/*
+- app/layout.tsx
+- app/page.tsx
+- app/dashboard/page.tsx
+- app/globals.css
+
+AUDIT COMPLETION
+- fixed ambient stacking context (lamp no longer behind solid body background)
+- lamp source/core + multi-radial volumetric spread + ambient spill + subtle wall bounce
+- source-focused asymmetric 820ms flicker + slower volume response
+- robust ThemeScript/ThemeProvider state handoff
+- safe storage failure handling
+- mobile drawer body-scroll lock + Escape + focus handoff
+- profile/dropdown/context outside-click + Escape dismissal
+- accessible section heading IDs
+- modal ARIA/backdrop close refinement
+- backdrop-filter fallback
+
+EXPECTED STATE AFTER INSTALL
+- / redirects to /dashboard
+- AppShell responsive
+- sticky navbar
+- desktop sidebar + mobile drawer
+- DateTimeWidget local time
+- user profile mock container
+- dark/light theme persistence
+- circular theme reveal
+- soft dark-mode spreading light with feathered falloff and no polygon edge
+- clearly perceptible lamp flicker sequencing
+- procedural grain
+- reduced-motion support
+- UI primitive library ready for Patch 2
+
+SEE ALSO
+- README_PATCH_1.md
+- PATCH_1_AUDIT.md
+
+
+SPREADING-LIGHT REVISION
+- removed polygon clip-path beam geometry
+- layered elongated radial lobes for natural widening/falloff
+- subtle volumetric haze masked inside the light
+- softer lower wall bounce
+- non-mirrored left/right intensity and shape
+- reduced steady intensity
+- softer mobile lighting with wider spread

@@ -70,6 +70,26 @@ export function createMockRooms(now = new Date()): Room[] {
       createdAt: createdB,
       updatedAt: now.toISOString(),
     },
+    {
+      id: "room_kenangan_dila",
+      ownerUid: MOCK_USER_UID,
+      title: "Dila Graduation 2026",
+      recipientName: "Dila",
+      occasionId: "graduation",
+      eventId: null,
+      themeId: "theme_warm_memory",
+      customThemeNameRaw: null,
+      status: "collecting",
+      collectorId: "collector_kenangan_dila",
+      receiverId: null,
+      collectionDeadline: addDays(now, 11),
+      firstBakedAt: null,
+      expiresAt: addDays(now, 33),
+      isPinned: false,
+      lastOpenedAt: addDays(now, -4),
+      createdAt: addDays(now, -2),
+      updatedAt: addDays(now, -1),
+    },
   ];
 }
 

@@ -1,0 +1,60 @@
+PATCH 2 — Backend Foundation & Infrastructure (REVISED: B2 direct + Cache Storage + IndexedDB)
+
+CHANGED
+.env.example
+lib/env/schema.ts
+package.json
+
+ADDED
+.nvmrc
+app/api/health/route.ts
+firebase.json
+firestore.indexes.json
+firestore.rules
+lib/ai/gemini.ts
+lib/ai/index.ts
+lib/browser-cache/cache.ts
+lib/browser-cache/db.ts
+lib/browser-cache/index.ts
+lib/browser-cache/policy.ts
+lib/browser-cache/types.ts
+lib/data/firestore/firestore-analytics-repository.ts
+lib/data/firestore/firestore-media-repository.ts
+lib/data/firestore/firestore-room-repository.ts
+lib/data/firestore/firestore-submission-repository.ts
+lib/data/firestore/firestore-user-repository.ts
+lib/data/firestore/index.ts
+lib/data/firestore/shared.ts
+lib/data/providers/backend-repository-provider.ts
+lib/firebase/admin.ts
+lib/firebase/client.ts
+lib/firebase/index.ts
+lib/http/api-error.ts
+lib/http/api-response.ts
+lib/http/index.ts
+lib/http/request-id.ts
+lib/storage/b2.ts
+lib/storage/index.ts
+lib/utils/timeout.ts
+patch_note/PATCH_2_MANIFEST.txt
+patch_note/PATCH_2_REMOVE_OLD_FILES.txt
+patch_note/PATCH_2_SETUP_GUIDE.md
+patch_note/README_PATCH_2.md
+scripts/configure-b2-cors.mjs
+scripts/infra-check.mjs
+scripts/seed-dev.mjs
+
+REMOVED FROM EARLIER PATCH 2 DRAFT
+cloudflare/ (entire folder)
+
+NOT CHANGED ON PURPOSE
+app/dashboard/**
+components/**
+lib/data/providers/repository-provider.ts
+
+Dashboard stays on mock repositories until Patch 3 auth/session is ready.
+
+PACKAGE-LOCK NOTE
+The sandbox npm mirror does not contain all newly pinned package versions.
+Run `npm install` on your machine after applying this patch. That updates
+package-lock.json, which should then be committed to Git before Vercel deploy.

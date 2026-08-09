@@ -1,0 +1,19 @@
+IF YOU ALREADY APPLIED THE EARLIER PATCH 2 DRAFT
+================================================
+
+Delete these old Cloudflare-only files/folders before using the revised patch:
+
+cloudflare/
+
+Remove these old environment variables if they exist:
+
+B2_PUBLIC_BUCKET
+B2_INGEST_BUCKET
+B2_ASSET_BUCKET
+B2_CDN_BASE_URL
+
+The revised Patch 2 uses only:
+
+B2_BUCKET=<one private bucket>
+
+Do NOT delete any Dashboard/Component files.
