@@ -54,6 +54,8 @@ export default async function RoomOverviewPage({ params }: PageProps) {
     getOwnerShellUser(session),
     backendRepositories.themes.getTheme(room.themeId),
   ]);
+  if (!user) redirect(`/onboarding?next=${encodeURIComponent(`/rooms/${id}`)}`);
+
   const derivedStatus = getDashboardRoomStatus(room);
 
   return (

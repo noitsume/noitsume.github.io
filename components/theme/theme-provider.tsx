@@ -35,7 +35,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = "kenangin-theme";
 const REVEAL_DURATION = 680;
-const LAMP_FLICKER_DURATION = 820;
+const LAMP_FLICKER_IN_DURATION = 1160;
+const LAMP_FLICKER_OUT_DURATION = 340;
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
@@ -81,6 +82,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const frame = window.requestAnimationFrame(() => {
       const current = getDocumentTheme();
       setTheme(current);
+      // The electrical desk lamp only exists in dark mode. Daylight owns its
+      // own sunlight fade and should not keep an invisible flicker runtime alive.
       setLampState(current === "dark" ? "on" : "off");
     });
 
@@ -183,6 +186,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // Read the DOM attribute here rather than relying only on hydrated state.
         // ThemeScript writes this before first paint, so a very fast click is safe.
         const currentTheme = getDocumentTheme();
+        const nextTheme: ThemeMode = currentTheme === "light" ? "dark" : "light";
+
+        // CSS uses this before the actual theme commit so night-only motion can
+        // freeze + fade while the lamps are still performing their power-down.
+        document.documentElement.dataset.themeTarget = nextTheme;
 
         if (currentTheme === "light") {
           // Light → Dark: circle reveal first, then the lamps wake/flicker and settle.
@@ -193,7 +201,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setLampState("on");
           } else {
             setLampState("flicker-on");
-            await sleep(LAMP_FLICKER_DURATION);
+            await sleep(LAMP_FLICKER_IN_DURATION);
             setLampState("on");
           }
         } else {
@@ -202,15 +210,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setLampState("off");
           } else {
             setLampState("flicker-off");
-            await sleep(LAMP_FLICKER_DURATION);
+            await sleep(LAMP_FLICKER_OUT_DURATION);
             setLampState("off");
             await sleep(90);
           }
 
           await revealTheme("light", origin);
+
+          // Light mode has no powered desk lamp. Keep it electrically off;
+          // CSS fades the lower-left sunlight in over ~3 seconds instead.
+          setLampState("off");
         }
       } finally {
         delete document.documentElement.dataset.themeTransitioning;
+        delete document.documentElement.dataset.themeTarget;
         setTheme(getDocumentTheme());
         setIsTransitioning(false);
       }

@@ -56,22 +56,28 @@ export async function POST(request: NextRequest) {
       throw new ApiError("EMAIL_REQUIRED", "Akun harus memiliki email.", 400);
     }
 
-    const displayName =
-      authUser.displayName?.trim() || email.split("@")[0] || "Owner";
     const photoURL = authUser.photoURL ?? null;
+    const existingProfile = await backendRepositories.users.getUser(decoded.uid);
 
-    const profile = await backendRepositories.users.upsertUser({
-      uid: decoded.uid,
-      displayName,
-      email,
-      photoURL,
-    });
+    // A Firebase/Google name is identity-provider metadata, not the Kenangin name.
+    // Only a username explicitly chosen in onboarding is allowed to become the
+    // display name stored by Kenangin.
+    const profile = existingProfile?.username
+      ? await backendRepositories.users.upsertUser({
+          uid: decoded.uid,
+          username: existingProfile.username,
+          displayName: existingProfile.username,
+          email,
+          photoURL,
+        })
+      : null;
+    const needsOnboarding = !profile?.username;
 
     const sessionCookie = await adminAuth.createSessionCookie(input.idToken, {
       expiresIn: SESSION_DURATION_MS,
     });
 
-    const response = apiOk({ user: profile }, requestId);
+    const response = apiOk({ user: profile, needsOnboarding }, requestId);
     response.cookies.set(
       getSessionCookieName(),
       sessionCookie,

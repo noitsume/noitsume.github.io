@@ -1,3 +1,4 @@
+export * from "./desk-background";
 export * from "./ambient-background";
 export * from "./theme-provider";
 export * from "./theme-script";

@@ -33,6 +33,8 @@ export default async function EditRoomPage({ params }: PageProps) {
     backendRepositories.themes.listThemes(),
   ]);
 
+  if (!user) redirect(`/onboarding?next=${encodeURIComponent(`/rooms/${id}/edit`)}`);
+
   return (
     <AppShell user={user}>
       <div className="room-page">

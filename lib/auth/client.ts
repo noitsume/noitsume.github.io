@@ -77,3 +77,23 @@ export async function destroyServerSession() {
 
   csrfCache = null;
 }
+
+export async function saveOwnerUsername(username: string) {
+  const csrfToken = await getCsrfToken();
+  const response = await fetch("/api/auth/profile", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-csrf-token": csrfToken,
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({ username }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.ok) {
+    throw new Error(payload?.error?.message ?? "Nama pengguna belum dapat disimpan.");
+  }
+
+  return payload.data;
+}

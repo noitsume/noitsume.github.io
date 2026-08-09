@@ -12,10 +12,10 @@ export default async function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="KENANGIN · CREATE OWNER"
+      eyebrow="KENANGIN.ID · CREATE OWNER"
       title="Bikin kejutan, bukan sekadar template."
       description="Buat akun owner untuk memulai Room, mengumpulkan momen dari orang-orang terdekat, lalu menyusunnya menjadi pengalaman Receiver."
-      footer={<p>Sudah punya akun? <Link href="/login">Masuk ke Kenangin</Link></p>}
+      footer={<p>Sudah punya akun? <Link href="/login">Masuk ke Kenangin.id</Link></p>}
     >
       <AuthForm mode="register" />
     </AuthShell>

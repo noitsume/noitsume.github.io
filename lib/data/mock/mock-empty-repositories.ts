@@ -13,31 +13,38 @@ import type {
 import { createMockThemes } from "./seed";
 
 export class MockMediaRepository implements MediaRepository {
-  async listByRoom(_roomId: string): Promise<Media[]> {
+  async listByRoom(roomId: string): Promise<Media[]> {
+    void roomId;
     return [];
   }
 
-  async getById(_id: string): Promise<Media | null> {
+  async getById(id: string): Promise<Media | null> {
+    void id;
     return null;
   }
 }
 
 export class MockSubmissionRepository implements SubmissionRepository {
-  async listByRoom(_roomId: string): Promise<Submission[]> {
+  async listByRoom(roomId: string): Promise<Submission[]> {
+    void roomId;
     return [];
   }
 
-  async getById(_id: string): Promise<Submission | null> {
+  async getById(id: string): Promise<Submission | null> {
+    void id;
     return null;
   }
 }
 
 export class MockAnalyticsRepository implements AnalyticsRepository {
   async listByRoom(
-    _roomId: string,
-    _from?: string,
-    _to?: string,
+    roomId: string,
+    from?: string,
+    to?: string,
   ): Promise<ReceiverAnalyticsEvent[]> {
+    void roomId;
+    void from;
+    void to;
     return [];
   }
 }

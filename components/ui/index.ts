@@ -7,3 +7,4 @@ export * from "./menus";
 export * from "./section-header";
 export * from "./surface";
 export * from "./tooltip";
+export * from "./select-popover";

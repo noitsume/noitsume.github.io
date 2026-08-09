@@ -1,14 +1,21 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { SelectPopover, type SelectOption } from "@/components/ui";
 import type { RoomSortMode } from "@/lib/domain/room-sorting";
+
+const options: SelectOption[] = [
+  { value: "newest", label: "Terbaru" },
+  { value: "oldest", label: "Terlama" },
+  { value: "status", label: "Status" },
+];
 
 export function RoomSortSelect({ value }: { value: RoomSortMode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  function change(next: RoomSortMode) {
+  function change(next: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "newest") params.delete("sort");
     else params.set("sort", next);
@@ -17,13 +24,16 @@ export function RoomSortSelect({ value }: { value: RoomSortMode }) {
   }
 
   return (
-    <label className="room-sort-control">
+    <div className="room-sort-control">
       <span>Urutkan</span>
-      <select value={value} onChange={(event) => change(event.target.value as RoomSortMode)}>
-        <option value="newest">Terbaru</option>
-        <option value="oldest">Terlama</option>
-        <option value="status">Status</option>
-      </select>
-    </label>
+      <SelectPopover
+        align="right"
+        ariaLabel="Urutkan room"
+        compact
+        options={options}
+        value={value}
+        onChange={change}
+      />
+    </div>
   );
 }

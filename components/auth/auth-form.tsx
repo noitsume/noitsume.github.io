@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FirebaseError } from "firebase/app";
 import {
@@ -10,9 +10,13 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
-  updateProfile,
 } from "firebase/auth";
-import { Button } from "@/components/ui";
+import {
+  AUTH_TO_DESK_DURATION_MS,
+  AuthToDeskTransition,
+} from "@/components/auth/auth-to-desk-transition";
+import { DESK_ENTRY_STORAGE_KEY } from "@/components/theme/desk-background";
+import { Button, GoogleIcon } from "@/components/ui";
 import { createServerSession } from "@/lib/auth/client";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
@@ -47,15 +51,42 @@ export function AuthForm({
   nextPath?: string;
 }) {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [transitionUsername, setTransitionUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    router.prefetch(safeNextPath(nextPath));
+    router.prefetch("/onboarding");
+  }, [nextPath, router]);
 
   async function finish(user: Parameters<typeof createServerSession>[0]) {
-    await createServerSession(user);
-    router.replace(safeNextPath(nextPath));
+    const session = await createServerSession(user);
+    const destination = safeNextPath(nextPath);
+
+    if (session.needsOnboarding) {
+      router.replace(`/onboarding?next=${encodeURIComponent(destination)}`);
+      router.refresh();
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    try {
+      window.sessionStorage.setItem(DESK_ENTRY_STORAGE_KEY, "1");
+    } catch {
+      // Session storage is only a visual hand-off hint; navigation must still work.
+    }
+
+    setTransitionUsername(session.user?.username ?? null);
+    setTransitioning(true);
+    await new Promise<void>((resolve) =>
+      window.setTimeout(resolve, reducedMotion ? 180 : AUTH_TO_DESK_DURATION_MS),
+    );
+    router.replace(destination);
     router.refresh();
   }
 
@@ -70,10 +101,6 @@ export function AuthForm({
 
       if (mode === "register") {
         const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        const cleanName = displayName.trim();
-        if (cleanName) {
-          await updateProfile(credential.user, { displayName: cleanName });
-        }
         await finish(credential.user);
       } else {
         const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -106,6 +133,7 @@ export function AuthForm({
 
   return (
     <>
+      <AuthToDeskTransition active={transitioning} username={transitionUsername} />
       <div className="auth-card__heading">
         <p className="ui-eyebrow">OWNER ACCESS</p>
         <h2>{mode === "login" ? "Masuk ke workspace" : "Buat akun owner"}</h2>
@@ -117,27 +145,13 @@ export function AuthForm({
       </div>
 
       <button className="auth-google-button" type="button" onClick={onGoogle} disabled={busy}>
-        <span className="auth-google-button__mark" aria-hidden="true">G</span>
+        <span className="auth-google-button__mark" aria-hidden="true"><GoogleIcon size={18} /></span>
         <span>Lanjut dengan Google</span>
       </button>
 
       <div className="auth-divider"><span>atau dengan email</span></div>
 
       <form className="auth-form" onSubmit={onSubmit}>
-        {mode === "register" ? (
-          <label className="form-field">
-            <span>Nama</span>
-            <input
-              autoComplete="name"
-              maxLength={80}
-              onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="Nama yang tampil di Kenangin"
-              required
-              value={displayName}
-            />
-          </label>
-        ) : null}
-
         <label className="form-field">
           <span>Email</span>
           <input

@@ -3,14 +3,14 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { Room, Theme } from "@/lib/data/contracts";
-import { Button } from "@/components/ui";
+import { Button, SelectPopover, type SelectOption } from "@/components/ui";
 import { getCsrfToken } from "@/lib/auth/client";
 
 const occasionOptions = [
-  { value: "birthday", label: "Ulang Tahun" },
-  { value: "graduation", label: "Wisuda" },
-  { value: "anniversary", label: "Anniversary" },
-] as const;
+  { value: "birthday", label: "Ulang Tahun", description: "Untuk perayaan ulang tahun personal" },
+  { value: "graduation", label: "Wisuda", description: "Ucapan kelulusan dan pencapaian" },
+  { value: "anniversary", label: "Anniversary", description: "Momen perayaan hubungan dan kebersamaan" },
+] as const satisfies readonly SelectOption[];
 
 function isoToLocalInput(iso: string) {
   const date = new Date(iso);
@@ -26,10 +26,12 @@ export function RoomForm({
   mode,
   themes,
   room,
+  onCancel,
 }: {
   mode: "create" | "edit";
   themes: Theme[];
   room?: Room;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(room?.title ?? "");
@@ -46,6 +48,17 @@ export function RoomForm({
     () => themes.find((theme) => theme.id === themeId),
     [themeId, themes],
   );
+
+  const themeOptions = useMemo<SelectOption[]>(
+    () => themes.map((theme) => ({ value: theme.id, label: theme.name, description: `${theme.palette.primary} · tema pilot` })),
+    [themes],
+  );
+
+  function handleCancel() {
+    if (busy) return;
+    if (onCancel) onCancel();
+    else router.back();
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,28 +136,28 @@ export function RoomForm({
           />
         </label>
 
-        <label className="form-field">
+        <div className="form-field">
           <span>Jenis acara</span>
-          <select value={occasionId} onChange={(event) => setOccasionId(event.target.value)}>
-            {occasionOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
+          <SelectPopover
+            ariaLabel="Jenis acara"
+            options={occasionOptions}
+            value={occasionId}
+            onChange={setOccasionId}
+          />
+        </div>
 
-        <label className="form-field">
+        <div className="form-field">
           <span>Tema awal</span>
-          <select
+          <SelectPopover
+            ariaLabel="Tema awal"
+            options={themeOptions}
             value={themeId}
-            onChange={(event) => setThemeId(event.target.value)}
-            required
-          >
-            {themes.map((theme) => (
-              <option key={theme.id} value={theme.id}>{theme.name}</option>
-            ))}
-          </select>
+            onChange={setThemeId}
+            disabled={themes.length === 0}
+            placeholder="Pilih tema"
+          />
           <small>{selectedTheme ? `${selectedTheme.name} · tema pilot` : "Pilih tema"}</small>
-        </label>
+        </div>
 
         <label className="form-field">
           <span>Deadline collecting</span>
@@ -165,7 +178,7 @@ export function RoomForm({
           type="button"
           variant="ghost"
           disabled={busy}
-          onClick={() => router.back()}
+          onClick={handleCancel}
         >
           Batal
         </Button>

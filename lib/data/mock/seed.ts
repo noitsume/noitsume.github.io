@@ -17,6 +17,7 @@ export function createMockUser(now = new Date()): UserProfile {
   const timestamp = now.toISOString();
   return {
     uid: MOCK_USER_UID,
+    username: "Kevin",
     displayName: "Kevin",
     email: "noitsume@gmail.com",
     photoURL: null,

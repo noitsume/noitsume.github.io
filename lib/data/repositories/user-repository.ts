@@ -2,7 +2,7 @@ import type { UserProfile } from "@/lib/data/contracts";
 
 export type UpsertUserInput = Pick<
   UserProfile,
-  "uid" | "displayName" | "email" | "photoURL"
+  "uid" | "username" | "displayName" | "email" | "photoURL"
 >;
 
 export interface UserRepository {

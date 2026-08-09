@@ -9,9 +9,19 @@ import type {
 import { firestoreDb, toIsoString, toTimestamp } from "./shared";
 
 function mapUser(uid: string, data: DocumentData): UserProfile {
+  const legacyDisplayName =
+    typeof data.displayName === "string" && data.displayName.trim()
+      ? data.displayName.trim()
+      : "Owner";
+  const username =
+    typeof data.username === "string" && data.username.trim()
+      ? data.username.trim()
+      : null;
+
   return userProfileSchema.parse({
     uid,
-    displayName: data.displayName,
+    username,
+    displayName: username ?? legacyDisplayName,
     email: data.email,
     photoURL: data.photoURL ?? null,
     createdAt: toIsoString(data.createdAt),
@@ -34,14 +44,16 @@ export class FirestoreUserRepository implements UserRepository {
     if (existing.exists) {
       const current = mapUser(existing.id, existing.data()!);
       const unchanged =
+        current.username === input.username &&
         current.displayName === input.displayName &&
         current.email === input.email &&
         current.photoURL === input.photoURL;
 
-      // Normal repeat login: 1 read, 0 Firestore writes.
+      // Normal repeat login: one read and no Firestore write when nothing changed.
       if (unchanged) return current;
 
       await ref.update({
+        username: input.username,
         displayName: input.displayName,
         email: input.email,
         photoURL: input.photoURL,
@@ -50,6 +62,7 @@ export class FirestoreUserRepository implements UserRepository {
 
       return userProfileSchema.parse({
         ...current,
+        username: input.username,
         displayName: input.displayName,
         email: input.email,
         photoURL: input.photoURL,
@@ -59,6 +72,7 @@ export class FirestoreUserRepository implements UserRepository {
 
     const profile = userProfileSchema.parse({
       uid: input.uid,
+      username: input.username,
       displayName: input.displayName,
       email: input.email,
       photoURL: input.photoURL,

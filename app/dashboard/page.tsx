@@ -1,19 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DashboardRoomSections } from "@/components/dashboard/dashboard-room-sections";
 import { AppShell } from "@/components/shell";
-import { RoomPinButton, RoomSortSelect } from "@/components/rooms";
 import {
   ArrowRightIcon,
   Badge,
   CalendarIcon,
-  PinIcon,
   SectionHeader,
-  SparklesIcon,
   Surface,
 } from "@/components/ui";
 import { getOwnerShellUser } from "@/lib/auth/owner-data";
 import { getOwnerSession } from "@/lib/auth/session";
-import type { EventDefinition, Room } from "@/lib/data/contracts";
+import type { EventDefinition } from "@/lib/data/contracts";
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
 import { getDashboardRoomStatus } from "@/lib/domain/room-status";
 import { sortRooms, type RoomSortMode } from "@/lib/domain/room-sorting";
@@ -41,34 +39,6 @@ function openedLabel(value: string) {
   return `${days} hari lalu`;
 }
 
-type DashboardDerivedStatus = "waiting" | "working" | "ended";
-
-function statusLabel(status: DashboardDerivedStatus) {
-  switch (status) {
-    case "waiting":
-      return "Waiting";
-    case "working":
-      return "On Working";
-    case "ended":
-      return "Ended";
-  }
-}
-
-function statusBadgeClass(status: DashboardDerivedStatus) {
-  if (status === "working") return "ui-badge--success";
-  if (status === "ended") return "ui-badge--indigo";
-  return "ui-badge--neutral";
-}
-
-function occasionLabel(occasionId: string) {
-  const map: Record<string, string> = {
-    birthday: "Ulang Tahun",
-    graduation: "Wisuda",
-    anniversary: "Anniversary",
-  };
-  return map[occasionId] ?? occasionId;
-}
-
 function StatItem({ label, value, description, tone }: { label: string; value: number; description: string; tone: "coral" | "neutral" | "green" | "indigo" }) {
   return (
     <div className={`dashboard-stat dashboard-stat--${tone}`}>
@@ -93,82 +63,26 @@ function EventCard({ event }: { event: EventDefinition }) {
   );
 }
 
-function PinnedRoomCard({ room, creatorName }: { room: Room; creatorName: string }) {
-  const derived = getDashboardRoomStatus(room);
-  return (
-    <Surface className="pinned-room-card" tone="elevated">
-      <div className="pinned-room-card__cover">
-        <Badge className={statusBadgeClass(derived)}>{statusLabel(derived)}</Badge>
-        <RoomPinButton roomId={room.id} pinned={room.isPinned} />
-      </div>
-      <div className="pinned-room-card__content">
-        <h3>{room.title}</h3>
-        <dl>
-          <div>
-            <dt>Dirayakan</dt>
-            <dd><strong>{room.recipientName}</strong></dd>
-          </div>
-          <div>
-            <dt>Deadline</dt>
-            <dd>{formatDateLabel(room.expiresAt ?? room.collectionDeadline)}</dd>
-          </div>
-          <div>
-            <dt>Pembuat</dt>
-            <dd>{creatorName}</dd>
-          </div>
-        </dl>
-        <div className="pinned-room-card__actions">
-          <Link className="ui-button ui-button--secondary pinned-room-card__button" href={`/rooms/${room.id}`}>
-            <span>Lihat Room</span>
-          </Link>
-          <Link className="pinned-room-card__more" href={`/rooms/${room.id}/edit`} aria-label={`Edit ${room.title}`}>
-            <span aria-hidden="true">•••</span>
-          </Link>
-        </div>
-      </div>
-    </Surface>
-  );
-}
-
-function ActiveRoomCard({ room, creatorName }: { room: Room; creatorName: string }) {
-  const derived = getDashboardRoomStatus(room);
-  return (
-    <Link className="active-room-card-link" href={`/rooms/${room.id}`}>
-      <Surface className="active-room-card" tone="quiet">
-        <Badge className={statusBadgeClass(derived)}>{statusLabel(derived)}</Badge>
-        <h3>{room.title}</h3>
-        <p>{occasionLabel(room.occasionId)}</p>
-        <p>{formatDateLabel(room.expiresAt ?? room.collectionDeadline)}</p>
-        <div className="active-room-card__meta">
-          <span>Pembuat</span>
-          <strong>{creatorName}</strong>
-        </div>
-      </Surface>
-    </Link>
-  );
-}
-
 type DashboardPageProps = {
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{ sort?: string; create?: string }>;
 };
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const session = await getOwnerSession();
   if (!session) redirect("/login?next=/dashboard");
 
-  const [{ sort }, user, rooms, events] = await Promise.all([
+  const [{ sort, create }, user, rooms, events, themes] = await Promise.all([
     searchParams,
     getOwnerShellUser(session),
     backendRepositories.rooms.listRooms(session.uid),
     backendRepositories.events.listEvents("ID"),
+    backendRepositories.themes.listThemes(),
   ]);
+
+  if (!user) redirect("/onboarding?next=/dashboard");
 
   const sortMode: RoomSortMode = sort === "oldest" || sort === "status" ? sort : "newest";
   const sortedRooms = sortRooms(rooms, sortMode);
-  const pinnedRooms = sortedRooms.filter((room) => room.isPinned).slice(0, 2);
-  const activeRooms = sortedRooms.filter(
-    (room) => !room.isPinned && getDashboardRoomStatus(room) !== "ended",
-  );
   const recentRooms = [...rooms]
     .filter((room) => room.lastOpenedAt)
     .sort((a, b) => new Date(b.lastOpenedAt ?? 0).getTime() - new Date(a.lastOpenedAt ?? 0).getTime())
@@ -249,10 +163,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <div className="dashboard-page">
         <Surface className="dashboard-hero" tone="elevated">
           <div className="dashboard-hero__copy">
-            <p className="ui-eyebrow">KENANGIN · OWNER DASHBOARD</p>
+            <p className="ui-eyebrow">KENANGIN.ID · OWNER DASHBOARD</p>
             <div className="dashboard-hero__title-row">
               <h1>Dashboard Owner</h1>
-              <span className="dashboard-hero__spark"><SparklesIcon size={22} /></span>
             </div>
             <p>
               Kelola room, pantau submission, dan siapkan kejutan personal dari satu workspace yang rapi dan terorganisir.
@@ -286,46 +199,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           )}
         </section>
 
-        <section className="dashboard-section" aria-labelledby="pinned-heading">
-          <SectionHeader
-            eyebrow="PILIHAN CEPAT"
-            icon={<PinIcon size={16} />}
-            title="Pinned"
-            headingId="pinned-heading"
-            action={<span className="section-note">{pinnedRooms.length} Room disematkan</span>}
-          />
-          {pinnedRooms.length > 0 ? (
-            <div className="pinned-grid">
-              {pinnedRooms.map((room) => (
-                <PinnedRoomCard key={room.id} room={room} creatorName={user.displayName} />
-              ))}
-            </div>
-          ) : (
-            <Surface className="dashboard-empty-state" tone="quiet">Belum ada Room yang disematkan. Pin Room penting agar muncul di sini.</Surface>
-          )}
-        </section>
-
-        <section className="dashboard-section" aria-labelledby="active-heading">
-          <SectionHeader
-            eyebrow="WORKSPACE"
-            icon={<SparklesIcon size={16} />}
-            title="Room Aktif"
-            headingId="active-heading"
-            action={<RoomSortSelect value={sortMode} />}
-          />
-          <div className="active-rooms-row">
-            <Link className="create-room-card-link" href="/rooms/new">
-              <Surface className="create-room-card" tone="quiet">
-                <div className="create-room-card__plus">+</div>
-                <h3>Buat Room</h3>
-                <p>Mulai workspace baru untuk event berikutnya.</p>
-              </Surface>
-            </Link>
-            {activeRooms.map((room) => (
-              <ActiveRoomCard key={room.id} room={room} creatorName={user.displayName} />
-            ))}
-          </div>
-        </section>
+        <DashboardRoomSections
+          initialRooms={sortedRooms}
+          creatorName={user.displayName}
+          sortMode={sortMode}
+          themes={themes}
+          initialCreateOpen={create === "1"}
+        />
       </div>
     </AppShell>
   );

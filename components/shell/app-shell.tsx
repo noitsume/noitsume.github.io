@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AmbientBackground } from "@/components/theme";
+import { DeskBackground } from "@/components/theme";
 import { CloseIcon, IconButton } from "@/components/ui";
 import { Sidebar } from "./sidebar";
 import { TopNavbar } from "./top-navbar";
@@ -41,7 +41,7 @@ export function AppShell({
 
   return (
     <div className={`app-shell ${rightRail ? "" : "app-shell--no-rail"}`.trim()}>
-      <AmbientBackground />
+      <DeskBackground />
       <TopNavbar user={user} onOpenMenu={() => setMobileOpen(true)} />
 
       <div className="app-shell__body">
