@@ -40,7 +40,7 @@ export function AppShell({
   }, [mobileOpen]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${rightRail ? "" : "app-shell--no-rail"}`.trim()}>
       <AmbientBackground />
       <TopNavbar user={user} onOpenMenu={() => setMobileOpen(true)} />
 

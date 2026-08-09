@@ -7,6 +7,8 @@ export const roomStatusSchema = z.enum([
   "ready",
 ]);
 
+export const roomConfigSchema = z.record(z.string(), z.unknown()).nullable();
+
 export const roomSchema = z.object({
   id: z.string().min(1),
   ownerUid: z.string().min(1),
@@ -20,10 +22,13 @@ export const roomSchema = z.object({
   collectorId: z.string().min(1),
   receiverId: z.string().min(1).nullable(),
   collectionDeadline: z.string().datetime(),
+  config: roomConfigSchema,
   firstBakedAt: z.string().datetime().nullable(),
+  lastBakedAt: z.string().datetime().nullable(),
   expiresAt: z.string().datetime().nullable(),
   isPinned: z.boolean(),
   lastOpenedAt: z.string().datetime().nullable(),
+  schemaVersion: z.number().int().positive(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -31,17 +36,16 @@ export const roomSchema = z.object({
 export type RoomStatus = z.infer<typeof roomStatusSchema>;
 export type Room = z.infer<typeof roomSchema>;
 
-export type CreateRoomInput = Omit<
+export type CreateRoomInput = Pick<
   Room,
-  | "id"
-  | "ownerUid"
-  | "collectorId"
-  | "receiverId"
-  | "firstBakedAt"
-  | "isPinned"
-  | "lastOpenedAt"
-  | "createdAt"
-  | "updatedAt"
+  | "title"
+  | "recipientName"
+  | "occasionId"
+  | "eventId"
+  | "themeId"
+  | "customThemeNameRaw"
+  | "collectionDeadline"
+  | "expiresAt"
 >;
 
 export type UpdateRoomInput = Partial<
@@ -53,7 +57,6 @@ export type UpdateRoomInput = Partial<
     | "eventId"
     | "themeId"
     | "customThemeNameRaw"
-    | "status"
     | "collectionDeadline"
     | "expiresAt"
   >

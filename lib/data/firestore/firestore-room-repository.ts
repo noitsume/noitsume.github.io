@@ -30,21 +30,24 @@ function mapRoom(id: string, data: DocumentData): Room {
     collectorId: data.collectorId,
     receiverId: data.receiverId ?? null,
     collectionDeadline: toIsoString(data.collectionDeadline),
+    config: data.config ?? null,
     firstBakedAt: nullableIsoString(data.firstBakedAt),
+    lastBakedAt: nullableIsoString(data.lastBakedAt),
     expiresAt: nullableIsoString(data.expiresAt),
     isPinned: Boolean(data.isPinned),
     lastOpenedAt: nullableIsoString(data.lastOpenedAt),
+    schemaVersion: Number(data.schemaVersion ?? 1),
     createdAt: toIsoString(data.createdAt),
     updatedAt: toIsoString(data.updatedAt),
   });
 }
 
-function inputToFirestore(input: CreateRoomInput | UpdateRoomInput) {
+function inputToFirestore(input: UpdateRoomInput) {
   const data: Record<string, unknown> = { ...input };
-  if ("collectionDeadline" in input && input.collectionDeadline !== undefined) {
+  if (input.collectionDeadline !== undefined) {
     data.collectionDeadline = toTimestamp(input.collectionDeadline);
   }
-  if ("expiresAt" in input && input.expiresAt !== undefined) {
+  if (input.expiresAt !== undefined) {
     data.expiresAt = toTimestamp(input.expiresAt);
   }
   return data;
@@ -78,11 +81,15 @@ export class FirestoreRoomRepository implements RoomRepository {
       ...input,
       id,
       ownerUid,
+      status: "collecting",
       collectorId: createId("collector"),
       receiverId: null,
+      config: null,
       firstBakedAt: null,
+      lastBakedAt: null,
       isPinned: false,
       lastOpenedAt: null,
+      schemaVersion: 1,
       createdAt: now,
       updatedAt: now,
     });
@@ -96,7 +103,9 @@ export class FirestoreRoomRepository implements RoomRepository {
       .set({
         ...roomDocument,
         collectionDeadline: toTimestamp(room.collectionDeadline),
+        config: null,
         firstBakedAt: null,
+        lastBakedAt: null,
         expiresAt: toTimestamp(room.expiresAt),
         lastOpenedAt: null,
         createdAt: toTimestamp(room.createdAt),
@@ -151,7 +160,6 @@ export class FirestoreRoomRepository implements RoomRepository {
 
     await ref.update({
       lastOpenedAt: toTimestamp(openedAt),
-      updatedAt: toTimestamp(openedAt),
     });
 
     const updated = await ref.get();

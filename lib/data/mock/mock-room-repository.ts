@@ -29,11 +29,15 @@ export class MockRoomRepository implements RoomRepository {
       ...input,
       id: createId("room"),
       ownerUid,
+      status: "collecting",
       collectorId: createId("collector"),
       receiverId: null,
+      config: null,
       firstBakedAt: null,
+      lastBakedAt: null,
       isPinned: false,
       lastOpenedAt: null,
+      schemaVersion: 1,
       createdAt: now,
       updatedAt: now,
     };
@@ -70,7 +74,6 @@ export class MockRoomRepository implements RoomRepository {
     return this.updateExisting(id, (room) => ({
       ...room,
       lastOpenedAt: openedAt,
-      updatedAt: openedAt,
     }));
   }
 

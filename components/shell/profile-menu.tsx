@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, ChevronDownIcon } from "@/components/ui";
+import { destroyServerSession } from "@/lib/auth/client";
 
 export type ShellUser = {
   displayName: string;
@@ -11,6 +13,8 @@ export type ShellUser = {
 
 export function ProfileMenu({ user }: { user: ShellUser }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -34,6 +38,17 @@ export function ProfileMenu({ user }: { user: ShellUser }) {
     };
   }, []);
 
+  async function logout() {
+    setSigningOut(true);
+    try {
+      await destroyServerSession();
+      router.replace("/login");
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
   return (
     <details className="profile-menu" ref={detailsRef}>
       <summary className="profile-menu__trigger">
@@ -49,8 +64,10 @@ export function ProfileMenu({ user }: { user: ShellUser }) {
         <strong>{user.displayName}</strong>
         <span>{user.email}</span>
         <div className="profile-menu__separator" />
-        <button type="button">Pengaturan profil</button>
-        <button type="button">Keluar</button>
+        <button type="button" disabled>Pengaturan profil</button>
+        <button type="button" onClick={logout} disabled={signingOut}>
+          {signingOut ? "Keluar..." : "Keluar"}
+        </button>
       </div>
     </details>
   );

@@ -12,23 +12,14 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
+      // Profile dibuat/disinkronkan server-side saat session login.
       allow read: if signedIn() && request.auth.uid == uid;
-      allow create: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.uid == request.auth.uid;
-      allow update: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.uid == resource.data.uid;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /rooms/{roomId} {
-      // Dashboard/client boleh membaca room miliknya.
+      // Direct client read tetap owner-only. Semua mutation lewat Next.js API.
       allow read: if signedIn() && resource.data.ownerUid == request.auth.uid;
-
-      // Semua mutation room melewati Next.js API + Firebase Admin.
-      // Admin SDK bypasses Firestore Security Rules, lalu API route yang
-      // bertanggung jawab melakukan auth, authorization, dan Zod validation.
       allow create, update, delete: if false;
 
       match /media/{mediaId} {
@@ -47,7 +38,6 @@ service cloud.firestore {
       }
     }
 
-    // Receiver publik akan disajikan lewat Next.js API/SSR pada Patch 7-8.
     match /receivers/{receiverId} {
       allow read, write: if false;
     }

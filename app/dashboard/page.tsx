@@ -1,40 +1,47 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell";
+import { RoomPinButton, RoomSortSelect } from "@/components/rooms";
 import {
   ArrowRightIcon,
   Badge,
-  Button,
   CalendarIcon,
-  MoreIcon,
   PinIcon,
   SectionHeader,
   SparklesIcon,
   Surface,
 } from "@/components/ui";
-import { repositories } from "@/lib/data/providers/repository-provider";
-import { MOCK_USER_UID, createMockUser } from "@/lib/data/mock/seed";
+import { getOwnerShellUser } from "@/lib/auth/owner-data";
+import { getOwnerSession } from "@/lib/auth/session";
 import type { EventDefinition, Room } from "@/lib/data/contracts";
+import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
+import { getDashboardRoomStatus } from "@/lib/domain/room-status";
+import { sortRooms, type RoomSortMode } from "@/lib/domain/room-sorting";
 
 function formatDateLabel(value: string) {
   return new Intl.DateTimeFormat("id-ID", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Jakarta",
   }).format(new Date(value));
 }
 
 function countdownLabel(value: string) {
   const ms = new Date(value).getTime() - Date.now();
   const days = Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-  return `${days} hari lagi`;
+  return days === 0 ? "Hari ini" : `${days} hari lagi`;
+}
+
+function openedLabel(value: string) {
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const days = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Hari ini";
+  if (days === 1) return "1 hari lalu";
+  return `${days} hari lalu`;
 }
 
 type DashboardDerivedStatus = "waiting" | "working" | "ended";
-
-function deriveDashboardStatus(room: Room): DashboardDerivedStatus {
-  if (room.expiresAt && new Date(room.expiresAt).getTime() < Date.now()) return "ended";
-  if (!room.firstBakedAt) return "waiting";
-  return "working";
-}
 
 function statusLabel(status: DashboardDerivedStatus) {
   switch (status) {
@@ -45,6 +52,12 @@ function statusLabel(status: DashboardDerivedStatus) {
     case "ended":
       return "Ended";
   }
+}
+
+function statusBadgeClass(status: DashboardDerivedStatus) {
+  if (status === "working") return "ui-badge--success";
+  if (status === "ended") return "ui-badge--indigo";
+  return "ui-badge--neutral";
 }
 
 function occasionLabel(occasionId: string) {
@@ -80,15 +93,13 @@ function EventCard({ event }: { event: EventDefinition }) {
   );
 }
 
-function PinnedRoomCard({ room }: { room: Room }) {
-  const derived = deriveDashboardStatus(room);
+function PinnedRoomCard({ room, creatorName }: { room: Room; creatorName: string }) {
+  const derived = getDashboardRoomStatus(room);
   return (
     <Surface className="pinned-room-card" tone="elevated">
       <div className="pinned-room-card__cover">
-        <Badge className={derived === "working" ? "ui-badge--success" : derived === "waiting" ? "ui-badge--neutral" : "ui-badge--indigo"}>{statusLabel(derived)}</Badge>
-        <button className="pinned-room-card__pin" type="button" aria-label="Room disematkan">
-          <PinIcon size={14} />
-        </button>
+        <Badge className={statusBadgeClass(derived)}>{statusLabel(derived)}</Badge>
+        <RoomPinButton roomId={room.id} pinned={room.isPinned} />
       </div>
       <div className="pinned-room-card__content">
         <h3>{room.title}</h3>
@@ -98,48 +109,66 @@ function PinnedRoomCard({ room }: { room: Room }) {
             <dd><strong>{room.recipientName}</strong></dd>
           </div>
           <div>
-            <dt>Kadaluarsa</dt>
+            <dt>Deadline</dt>
             <dd>{formatDateLabel(room.expiresAt ?? room.collectionDeadline)}</dd>
           </div>
           <div>
             <dt>Pembuat</dt>
-            <dd>Kevin</dd>
+            <dd>{creatorName}</dd>
           </div>
         </dl>
         <div className="pinned-room-card__actions">
-          <Button className="pinned-room-card__button">Lihat Room</Button>
-          <button className="pinned-room-card__more" type="button" aria-label="Opsi lainnya">
-            <MoreIcon size={16} />
-          </button>
+          <Link className="ui-button ui-button--secondary pinned-room-card__button" href={`/rooms/${room.id}`}>
+            <span>Lihat Room</span>
+          </Link>
+          <Link className="pinned-room-card__more" href={`/rooms/${room.id}/edit`} aria-label={`Edit ${room.title}`}>
+            <span aria-hidden="true">•••</span>
+          </Link>
         </div>
       </div>
     </Surface>
   );
 }
 
-function ActiveRoomCard({ room }: { room: Room }) {
-  const derived = deriveDashboardStatus(room);
+function ActiveRoomCard({ room, creatorName }: { room: Room; creatorName: string }) {
+  const derived = getDashboardRoomStatus(room);
   return (
-    <Surface className="active-room-card" tone="quiet">
-      <Badge className={derived === "working" ? "ui-badge--success" : derived === "waiting" ? "ui-badge--neutral" : "ui-badge--indigo"}>{statusLabel(derived)}</Badge>
-      <h3>{room.title}</h3>
-      <p>{occasionLabel(room.occasionId)}</p>
-      <p>{formatDateLabel(room.expiresAt ?? room.collectionDeadline)}</p>
-      <div className="active-room-card__meta">
-        <span>Pembuat</span>
-        <strong>Kevin</strong>
-      </div>
-    </Surface>
+    <Link className="active-room-card-link" href={`/rooms/${room.id}`}>
+      <Surface className="active-room-card" tone="quiet">
+        <Badge className={statusBadgeClass(derived)}>{statusLabel(derived)}</Badge>
+        <h3>{room.title}</h3>
+        <p>{occasionLabel(room.occasionId)}</p>
+        <p>{formatDateLabel(room.expiresAt ?? room.collectionDeadline)}</p>
+        <div className="active-room-card__meta">
+          <span>Pembuat</span>
+          <strong>{creatorName}</strong>
+        </div>
+      </Surface>
+    </Link>
   );
 }
 
-export default async function DashboardFoundationPage() {
-  const user = (await repositories.users.getUser(MOCK_USER_UID)) ?? createMockUser();
-  const rooms = await repositories.rooms.listRooms(MOCK_USER_UID);
-  const events = await repositories.events.listEvents("ID");
+type DashboardPageProps = {
+  searchParams: Promise<{ sort?: string }>;
+};
 
-  const pinnedRooms = rooms.filter((room) => room.isPinned).slice(0, 2);
-  const activeRooms = rooms.filter((room) => !room.isPinned && deriveDashboardStatus(room) !== "ended");
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const session = await getOwnerSession();
+  if (!session) redirect("/login?next=/dashboard");
+
+  const [{ sort }, user, rooms, events] = await Promise.all([
+    searchParams,
+    getOwnerShellUser(session),
+    backendRepositories.rooms.listRooms(session.uid),
+    backendRepositories.events.listEvents("ID"),
+  ]);
+
+  const sortMode: RoomSortMode = sort === "oldest" || sort === "status" ? sort : "newest";
+  const sortedRooms = sortRooms(rooms, sortMode);
+  const pinnedRooms = sortedRooms.filter((room) => room.isPinned).slice(0, 2);
+  const activeRooms = sortedRooms.filter(
+    (room) => !room.isPinned && getDashboardRoomStatus(room) !== "ended",
+  );
   const recentRooms = [...rooms]
     .filter((room) => room.lastOpenedAt)
     .sort((a, b) => new Date(b.lastOpenedAt ?? 0).getTime() - new Date(a.lastOpenedAt ?? 0).getTime())
@@ -147,9 +176,9 @@ export default async function DashboardFoundationPage() {
 
   const stats = {
     total: rooms.length,
-    waiting: rooms.filter((room) => deriveDashboardStatus(room) === "waiting").length,
-    working: rooms.filter((room) => deriveDashboardStatus(room) === "working").length,
-    ended: rooms.filter((room) => deriveDashboardStatus(room) === "ended").length,
+    waiting: rooms.filter((room) => getDashboardRoomStatus(room) === "waiting").length,
+    working: rooms.filter((room) => getDashboardRoomStatus(room) === "working").length,
+    ended: rooms.filter((room) => getDashboardRoomStatus(room) === "ended").length,
   };
 
   const rightRail = (
@@ -160,18 +189,24 @@ export default async function DashboardFoundationPage() {
           <Badge>{Math.min(recentRooms.length, 3)} / 3</Badge>
         </div>
         <h3>Room Terakhir Dibuka</h3>
-        <ol className="history-list">
-          {recentRooms.map((room, index) => (
-            <li key={room.id} className="history-list__item">
-              <span className="history-list__index">{index + 1}</span>
-              <div>
-                <strong>{room.title}</strong>
-                <p>Terakhir dibuka {index + 1} hari lalu</p>
-              </div>
-              <ArrowRightIcon size={16} />
-            </li>
-          ))}
-        </ol>
+        {recentRooms.length > 0 ? (
+          <ol className="history-list">
+            {recentRooms.map((room, index) => (
+              <li key={room.id}>
+                <Link className="history-list__item" href={`/rooms/${room.id}`}>
+                  <span className="history-list__index">{index + 1}</span>
+                  <div>
+                    <strong>{room.title}</strong>
+                    <p>Terakhir dibuka {openedLabel(room.lastOpenedAt!)}</p>
+                  </div>
+                  <ArrowRightIcon size={16} />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="dashboard-empty-copy">Belum ada Room yang dibuka dari akun ini.</p>
+        )}
       </Surface>
 
       <Surface className="dashboard-rail__panel" tone="quiet">
@@ -204,7 +239,7 @@ export default async function DashboardFoundationPage() {
             <strong>0 orang</strong>
           </div>
         </div>
-        <p className="viewer-footnote">Dihitung dari pembukaan link dan tontonan Receiver yang sudah memenuhi ambang.</p>
+        <p className="viewer-footnote">Analytics Receiver baru akan diaktifkan setelah alur Receiver tersedia.</p>
       </Surface>
     </div>
   );
@@ -214,9 +249,9 @@ export default async function DashboardFoundationPage() {
       <div className="dashboard-page">
         <Surface className="dashboard-hero" tone="elevated">
           <div className="dashboard-hero__copy">
-            <p className="ui-eyebrow">KENANGIN · USER DASHBOARD</p>
+            <p className="ui-eyebrow">KENANGIN · OWNER DASHBOARD</p>
             <div className="dashboard-hero__title-row">
-              <h1>Dashboard User</h1>
+              <h1>Dashboard Owner</h1>
               <span className="dashboard-hero__spark"><SparklesIcon size={22} /></span>
             </div>
             <p>
@@ -240,11 +275,15 @@ export default async function DashboardFoundationPage() {
             headingId="upcoming-heading"
             action={<span className="section-note">Dihitung otomatis dari tanggal hari ini</span>}
           />
-          <div className="events-grid">
-            {events.slice(0, 3).map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
+          {events.length > 0 ? (
+            <div className="events-grid">
+              {events.slice(0, 3).map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          ) : (
+            <Surface className="dashboard-empty-state" tone="quiet">Belum ada event terkurasi berikutnya.</Surface>
+          )}
         </section>
 
         <section className="dashboard-section" aria-labelledby="pinned-heading">
@@ -255,11 +294,15 @@ export default async function DashboardFoundationPage() {
             headingId="pinned-heading"
             action={<span className="section-note">{pinnedRooms.length} Room disematkan</span>}
           />
-          <div className="pinned-grid">
-            {pinnedRooms.map((room) => (
-              <PinnedRoomCard key={room.id} room={room} />
-            ))}
-          </div>
+          {pinnedRooms.length > 0 ? (
+            <div className="pinned-grid">
+              {pinnedRooms.map((room) => (
+                <PinnedRoomCard key={room.id} room={room} creatorName={user.displayName} />
+              ))}
+            </div>
+          ) : (
+            <Surface className="dashboard-empty-state" tone="quiet">Belum ada Room yang disematkan. Pin Room penting agar muncul di sini.</Surface>
+          )}
         </section>
 
         <section className="dashboard-section" aria-labelledby="active-heading">
@@ -268,16 +311,18 @@ export default async function DashboardFoundationPage() {
             icon={<SparklesIcon size={16} />}
             title="Room Aktif"
             headingId="active-heading"
-            action={<span className="section-note">Urutkan: Terbaru</span>}
+            action={<RoomSortSelect value={sortMode} />}
           />
           <div className="active-rooms-row">
-            <Surface className="create-room-card" tone="quiet">
-              <div className="create-room-card__plus">+</div>
-              <h3>Buat Room</h3>
-              <p>Mulai workspace baru untuk event berikutnya.</p>
-            </Surface>
+            <Link className="create-room-card-link" href="/rooms/new">
+              <Surface className="create-room-card" tone="quiet">
+                <div className="create-room-card__plus">+</div>
+                <h3>Buat Room</h3>
+                <p>Mulai workspace baru untuk event berikutnya.</p>
+              </Surface>
+            </Link>
             {activeRooms.map((room) => (
-              <ActiveRoomCard key={room.id} room={room} />
+              <ActiveRoomCard key={room.id} room={room} creatorName={user.displayName} />
             ))}
           </div>
         </section>

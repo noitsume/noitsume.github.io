@@ -8,9 +8,8 @@ import {
   MockUserRepository,
 } from "@/lib/data/mock";
 
-// Patch 0 intentionally points every domain to mock repositories.
-// Later patches swap these providers to Firestore/API implementations
-// without changing React components that consume the interfaces.
+// Mock provider is intentionally kept for isolated previews/tests.
+// Owner-facing production pages use backendRepositories after Patch 3.
 export const repositories = {
   rooms: new MockRoomRepository(),
   media: new MockMediaRepository(),

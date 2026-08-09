@@ -40,7 +40,7 @@ async function checkB2() {
 
 async function checkGemini() {
   const ai = new GoogleGenAI({ apiKey: required("GEMINI_API_KEY") });
-  const model = process.env.GEMINI_TEXT_MODEL || "gemini-3.5-flash-lite";
+  const model = process.env.GEMINI_TEXT_MODEL || "gemini-3.6-flash";
   const response = await ai.models.generateContent({
     model,
     contents: "Reply with exactly OK",

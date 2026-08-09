@@ -21,7 +21,7 @@ export function getGeminiClient(): GoogleGenAI {
 export function getGeminiModelConfig() {
   const env = getServerEnv();
   return {
-    textModel: env.GEMINI_TEXT_MODEL ?? "gemini-3.5-flash-lite",
+    textModel: env.GEMINI_TEXT_MODEL ?? "gemini-3.6-flash",
     imageModel: env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-lite-image",
     timeoutMs: env.GEMINI_TIMEOUT_MS,
   };

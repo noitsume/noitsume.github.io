@@ -1,0 +1,75 @@
+KENANGIN — PATCH 3 DELTA MANIFEST
+Authentication + Dynamic Dashboard + Room CRUD
+
+ZIP ini hanya berisi file yang berubah/ditambahkan oleh Patch 3.
+Extract ke root project Kenangin lalu replace file yang bentrok.
+
+CHANGED FILES (22)
+- .env.example
+- app/dashboard/page.tsx
+- app/globals.css
+- app/page.tsx
+- components/shell/app-shell.tsx
+- components/shell/profile-menu.tsx
+- components/shell/sidebar.tsx
+- firestore.rules
+- lib/ai/gemini.ts
+- lib/data/contracts/room.ts
+- lib/data/firestore/firestore-room-repository.ts
+- lib/data/firestore/firestore-user-repository.ts
+- lib/data/mock/mock-room-repository.ts
+- lib/data/mock/mock-user-repository.ts
+- lib/data/mock/seed.ts
+- lib/data/providers/backend-repository-provider.ts
+- lib/data/providers/index.ts
+- lib/data/providers/repository-provider.ts
+- lib/data/repositories/user-repository.ts
+- lib/http/index.ts
+- scripts/infra-check.mjs
+- scripts/seed-dev.mjs
+
+NEW FILES (35)
+- app/api/auth/csrf/route.ts
+- app/api/auth/session/route.ts
+- app/api/rooms/[id]/open/route.ts
+- app/api/rooms/[id]/pin/route.ts
+- app/api/rooms/[id]/route.ts
+- app/api/rooms/route.ts
+- app/login/page.tsx
+- app/register/page.tsx
+- app/rooms/[id]/edit/page.tsx
+- app/rooms/[id]/page.tsx
+- app/rooms/new/page.tsx
+- components/auth/auth-form.tsx
+- components/auth/auth-shell.tsx
+- components/auth/index.ts
+- components/rooms/index.ts
+- components/rooms/room-actions.tsx
+- components/rooms/room-form.tsx
+- components/rooms/room-open-tracker.tsx
+- components/rooms/room-pin-button.tsx
+- components/rooms/room-sort-select.tsx
+- config/events.ts
+- lib/auth/client.ts
+- lib/auth/constants.ts
+- lib/auth/csrf.ts
+- lib/auth/index.ts
+- lib/auth/owner-data.ts
+- lib/auth/session.ts
+- lib/data/static/index.ts
+- lib/data/static/static-event-repository.ts
+- lib/http/route-error.ts
+- lib/rooms/index.ts
+- lib/rooms/schemas.ts
+- lib/rooms/service.ts
+- patch_note/README_PATCH_3.md
+- proxy.ts
+
+DELETED FILES (0)
+- Tidak ada.
+
+VALIDASI SETELAH INSTALL:
+1. npm run check
+2. npm run firebase:deploy
+3. npm run infra:check
+4. Jalankan smoke test di README_PATCH_3.md
