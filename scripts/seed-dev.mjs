@@ -16,10 +16,12 @@ const privateKey = required("FIREBASE_PRIVATE_KEY").replace(/\\n/g, "\n");
 const rl = readline.createInterface({ input, output });
 console.log(`Target Firebase project: ${projectId}`);
 console.log("Script ini akan menambah/mengganti data DEV dengan ID yang tetap.");
-const confirmation = await rl.question('Ketik "SEED" untuk lanjut: ');
+console.log("Jangan jalankan seed pada project production.");
+const expectedConfirmation = `SEED:${projectId}`;
+const confirmation = await rl.question(`Ketik \"${expectedConfirmation}\" untuk lanjut: `);
 rl.close();
 
-if (confirmation !== "SEED") {
+if (confirmation !== expectedConfirmation) {
   console.log("Dibatalkan. Tidak ada data yang diubah.");
   process.exit(0);
 }

@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
-import { getServerEnv } from "@/lib/env/server";
+import { getSessionCookieNameFromEnv } from "@/lib/env/server";
 import { ApiError } from "@/lib/http";
 import { SESSION_DURATION_SECONDS } from "./constants";
 
@@ -15,7 +15,7 @@ export type OwnerSession = {
 };
 
 function sessionCookieName() {
-  return getServerEnv().SESSION_COOKIE_NAME;
+  return getSessionCookieNameFromEnv();
 }
 
 function claimsToOwnerSession(claims: DecodedIdToken): OwnerSession {

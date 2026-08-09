@@ -66,7 +66,7 @@ export function ProfileMenu({ user }: { user: ShellUser }) {
         <div className="profile-menu__separator" />
         <button type="button" disabled>Pengaturan profil</button>
         <button type="button" onClick={logout} disabled={signingOut}>
-          {signingOut ? "Keluar..." : "Keluar"}
+          {signingOut ? "Logout..." : "Logout"}
         </button>
       </div>
     </details>

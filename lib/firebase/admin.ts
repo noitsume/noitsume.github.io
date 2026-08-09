@@ -3,10 +3,10 @@ import "server-only";
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
-import { getServerEnv } from "@/lib/env/server";
+import { getFirebaseAdminEnv } from "@/lib/env/server";
 
 function requireFirebaseAdminCredentials() {
-  const env = getServerEnv();
+  const env = getFirebaseAdminEnv();
   const missing = [
     ["FIREBASE_PROJECT_ID", env.FIREBASE_PROJECT_ID],
     ["FIREBASE_CLIENT_EMAIL", env.FIREBASE_CLIENT_EMAIL],

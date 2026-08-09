@@ -1,39 +1,67 @@
 import { apiOk, createRequestId } from "@/lib/http";
-import { getServerEnv } from "@/lib/env/server";
+import {
+  b2EnvSchema,
+  clientEnvSchema,
+  firebaseAdminEnvSchema,
+  geminiEnvSchema,
+} from "@/lib/env/schema";
 
-function configured(...values: Array<string | undefined>) {
-  return values.every(Boolean);
+function configured(names: string[]) {
+  return names.every((name) => Boolean(process.env[name]?.trim()));
+}
+
+function validationIssues(result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[] }> } }) {
+  if (result.success || !result.error) return [] as string[];
+  return [...new Set(result.error.issues.map((issue) => String(issue.path[0] ?? "unknown")))];
 }
 
 export async function GET() {
-  const env = getServerEnv();
   const requestId = createRequestId();
+
+  const firebaseClientResult = clientEnvSchema.safeParse(process.env);
+  const firebaseAdminResult = firebaseAdminEnvSchema.safeParse(process.env);
+  const b2Result = b2EnvSchema.safeParse(process.env);
+  const geminiResult = geminiEnvSchema.safeParse(process.env);
+
+  const invalidEnvironmentVariables = [
+    ...validationIssues(firebaseClientResult),
+    ...validationIssues(firebaseAdminResult),
+    ...validationIssues(b2Result),
+    ...validationIssues(geminiResult),
+  ];
 
   return apiOk(
     {
       app: "kenangin",
-      status: "ok",
+      status: invalidEnvironmentVariables.length === 0 ? "ok" : "configuration-warning",
       services: {
-        firebaseClient: configured(
-          env.NEXT_PUBLIC_FIREBASE_API_KEY,
-          env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-          env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          env.NEXT_PUBLIC_FIREBASE_APP_ID,
-        ),
-        firebaseAdmin: configured(
-          env.FIREBASE_PROJECT_ID,
-          env.FIREBASE_CLIENT_EMAIL,
-          env.FIREBASE_PRIVATE_KEY,
-        ),
-        backblazeB2: configured(
-          env.B2_ENDPOINT,
-          env.B2_REGION,
-          env.B2_KEY_ID,
-          env.B2_APPLICATION_KEY,
-          env.B2_BUCKET,
-        ),
-        gemini: Boolean(env.GEMINI_API_KEY),
+        firebaseClient:
+          firebaseClientResult.success &&
+          configured([
+            "NEXT_PUBLIC_FIREBASE_API_KEY",
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+            "NEXT_PUBLIC_FIREBASE_APP_ID",
+          ]),
+        firebaseAdmin:
+          firebaseAdminResult.success &&
+          configured([
+            "FIREBASE_PROJECT_ID",
+            "FIREBASE_CLIENT_EMAIL",
+            "FIREBASE_PRIVATE_KEY",
+          ]),
+        backblazeB2:
+          b2Result.success &&
+          configured([
+            "B2_ENDPOINT",
+            "B2_REGION",
+            "B2_KEY_ID",
+            "B2_APPLICATION_KEY",
+            "B2_BUCKET",
+          ]),
+        gemini: geminiResult.success && configured(["GEMINI_API_KEY"]),
       },
+      invalidEnvironmentVariables: [...new Set(invalidEnvironmentVariables)],
       mediaDelivery: {
         origin: "backblaze-b2-private",
         authorization: "presigned-url",

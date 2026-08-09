@@ -31,21 +31,47 @@ export class FirestoreUserRepository implements UserRepository {
     const existing = await ref.get();
     const now = new Date().toISOString();
 
-    await ref.set(
-      {
-        uid: input.uid,
+    if (existing.exists) {
+      const current = mapUser(existing.id, existing.data()!);
+      const unchanged =
+        current.displayName === input.displayName &&
+        current.email === input.email &&
+        current.photoURL === input.photoURL;
+
+      // Normal repeat login: 1 read, 0 Firestore writes.
+      if (unchanged) return current;
+
+      await ref.update({
         displayName: input.displayName,
         email: input.email,
         photoURL: input.photoURL,
-        createdAt: existing.exists
-          ? existing.data()!.createdAt
-          : toTimestamp(now),
         updatedAt: toTimestamp(now),
-      },
-      { merge: true },
-    );
+      });
 
-    const updated = await ref.get();
-    return mapUser(updated.id, updated.data()!);
+      return userProfileSchema.parse({
+        ...current,
+        displayName: input.displayName,
+        email: input.email,
+        photoURL: input.photoURL,
+        updatedAt: now,
+      });
+    }
+
+    const profile = userProfileSchema.parse({
+      uid: input.uid,
+      displayName: input.displayName,
+      email: input.email,
+      photoURL: input.photoURL,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ref.set({
+      ...profile,
+      createdAt: toTimestamp(profile.createdAt),
+      updatedAt: toTimestamp(profile.updatedAt),
+    });
+
+    return profile;
   }
 }

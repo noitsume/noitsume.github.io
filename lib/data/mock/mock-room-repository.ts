@@ -46,11 +46,15 @@ export class MockRoomRepository implements RoomRepository {
     return structuredClone(room);
   }
 
-  async updateRoom(id: string, patch: UpdateRoomInput): Promise<Room> {
-    return this.updateExisting(id, (room) => ({
+  async updateRoom(
+    id: string,
+    patch: UpdateRoomInput,
+    updatedAt: string,
+  ): Promise<void> {
+    this.updateExisting(id, (room) => ({
       ...room,
       ...patch,
-      updatedAt: new Date().toISOString(),
+      updatedAt,
     }));
   }
 
@@ -62,16 +66,20 @@ export class MockRoomRepository implements RoomRepository {
     }
   }
 
-  async setPinned(id: string, pinned: boolean): Promise<Room> {
-    return this.updateExisting(id, (room) => ({
+  async setPinned(
+    id: string,
+    pinned: boolean,
+    updatedAt: string,
+  ): Promise<void> {
+    this.updateExisting(id, (room) => ({
       ...room,
       isPinned: pinned,
-      updatedAt: new Date().toISOString(),
+      updatedAt,
     }));
   }
 
-  async touchLastOpened(id: string, openedAt = new Date().toISOString()): Promise<Room> {
-    return this.updateExisting(id, (room) => ({
+  async touchLastOpened(id: string, openedAt: string): Promise<void> {
+    this.updateExisting(id, (room) => ({
       ...room,
       lastOpenedAt: openedAt,
     }));

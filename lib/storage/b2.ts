@@ -7,12 +7,12 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getServerEnv } from "@/lib/env/server";
+import { getB2Env } from "@/lib/env/server";
 
 let client: S3Client | null = null;
 
 function requireB2Config() {
-  const env = getServerEnv();
+  const env = getB2Env();
   const missing = [
     ["B2_ENDPOINT", env.B2_ENDPOINT],
     ["B2_REGION", env.B2_REGION],

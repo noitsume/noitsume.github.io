@@ -1,19 +1,11 @@
 import "server-only";
 
 import type { ShellUser } from "@/components/shell/profile-menu";
-import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
 import type { OwnerSession } from "./session";
 
+// The session already contains the Firebase-authenticated owner identity.
+// Avoid an extra Firestore read on every protected page just to render Navbar.
 export async function getOwnerShellUser(session: OwnerSession): Promise<ShellUser> {
-  const profile = await backendRepositories.users.getUser(session.uid);
-  if (profile) {
-    return {
-      displayName: profile.displayName,
-      email: profile.email,
-      photoURL: profile.photoURL,
-    };
-  }
-
   return {
     displayName: session.displayName,
     email: session.email,

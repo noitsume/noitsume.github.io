@@ -4,19 +4,37 @@ import type { User } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
+const CSRF_CLIENT_CACHE_MS = 10 * 60 * 1000;
+let csrfCache: { token: string; expiresAt: number } | null = null;
+let csrfInFlight: Promise<string> | null = null;
+
 export async function getCsrfToken(): Promise<string> {
-  const response = await fetch("/api/auth/csrf", {
-    method: "GET",
-    credentials: "same-origin",
-    cache: "no-store",
-  });
-  const payload = await response.json();
+  const now = Date.now();
+  if (csrfCache && csrfCache.expiresAt > now) return csrfCache.token;
+  if (csrfInFlight) return csrfInFlight;
 
-  if (!response.ok || !payload?.ok || !payload?.data?.csrfToken) {
-    throw new Error(payload?.error?.message ?? "Gagal menyiapkan token keamanan.");
+  csrfInFlight = (async () => {
+    const response = await fetch("/api/auth/csrf", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const payload = await response.json();
+
+    if (!response.ok || !payload?.ok || !payload?.data?.csrfToken) {
+      throw new Error(payload?.error?.message ?? "Gagal menyiapkan token keamanan.");
+    }
+
+    const token = payload.data.csrfToken as string;
+    csrfCache = { token, expiresAt: Date.now() + CSRF_CLIENT_CACHE_MS };
+    return token;
+  })();
+
+  try {
+    return await csrfInFlight;
+  } finally {
+    csrfInFlight = null;
   }
-
-  return payload.data.csrfToken as string;
 }
 
 export async function createServerSession(user: User) {
@@ -56,4 +74,6 @@ export async function destroyServerSession() {
     const payload = await response.json().catch(() => null);
     throw new Error(payload?.error?.message ?? "Gagal keluar dari akun.");
   }
+
+  csrfCache = null;
 }

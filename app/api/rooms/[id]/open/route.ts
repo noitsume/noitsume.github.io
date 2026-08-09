@@ -12,8 +12,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     assertCsrf(request);
     const session = await requireOwnerSession();
     const { id } = await context.params;
-    const room = await touchOwnedRoom(session.uid, id);
-    return apiOk({ room }, requestId);
+    const result = await touchOwnedRoom(session.uid, id);
+    return apiOk(result, requestId);
   } catch (error) {
     return apiErrorResponse(error, requestId, "POST /api/rooms/[id]/open");
   }

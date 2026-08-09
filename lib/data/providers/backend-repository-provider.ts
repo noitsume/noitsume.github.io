@@ -5,14 +5,14 @@ import {
   FirestoreSubmissionRepository,
   FirestoreUserRepository,
 } from "@/lib/data/firestore";
-import { MockThemeRepository } from "@/lib/data/mock";
-import { StaticEventRepository } from "@/lib/data/static";
+import { StaticEventRepository, StaticThemeRepository } from "@/lib/data/static";
 
+// Production/server-facing provider. No mock repository is allowed here.
 export const backendRepositories = {
   rooms: new FirestoreRoomRepository(),
   media: new FirestoreMediaRepository(),
   submissions: new FirestoreSubmissionRepository(),
-  themes: new MockThemeRepository(),
+  themes: new StaticThemeRepository(),
   analytics: new FirestoreAnalyticsRepository(),
   users: new FirestoreUserRepository(),
   events: new StaticEventRepository(),

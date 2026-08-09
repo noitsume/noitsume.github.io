@@ -847,7 +847,8 @@ html[data-lamps="flicker-off"][data-theme="dark"] .ambient-lamp--right .ambient-
   padding: 12px 20px;
   border-bottom: 1px solid var(--hairline);
   background: var(--nav-bg);
-  contain: paint;
+  overflow: visible;
+  isolation: isolate;
 }
 
 .top-navbar::after {
@@ -959,6 +960,11 @@ html[data-theme="light"] .theme-toggle__moon {
 
 .profile-menu {
   position: relative;
+  z-index: 120;
+}
+
+.profile-menu[open] {
+  z-index: 1000;
 }
 
 .profile-menu > summary {
@@ -1014,16 +1020,17 @@ html[data-theme="light"] .theme-toggle__moon {
   display: grid;
   place-items: center;
   color: var(--text-muted);
+  transform: rotate(-90deg);
   transition: transform 160ms ease;
 }
 
 .profile-menu[open] .profile-menu__chevron {
-  transform: rotate(180deg);
+  transform: rotate(0deg);
 }
 
 .profile-menu__popover {
   position: absolute;
-  z-index: 90;
+  z-index: 1001;
   top: calc(100% + 9px);
   right: 0;
   width: 230px;

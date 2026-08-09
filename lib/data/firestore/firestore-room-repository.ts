@@ -115,54 +115,35 @@ export class FirestoreRoomRepository implements RoomRepository {
     return room;
   }
 
-  async updateRoom(id: string, patch: UpdateRoomInput): Promise<Room> {
-    const ref = firestoreDb().collection("rooms").doc(id);
-    const current = await ref.get();
-    if (!current.exists) throw new Error(`Room not found: ${id}`);
-
-    await ref.update({
+  async updateRoom(
+    id: string,
+    patch: UpdateRoomInput,
+    updatedAt: string,
+  ): Promise<void> {
+    await firestoreDb().collection("rooms").doc(id).update({
       ...inputToFirestore(patch),
-      updatedAt: toTimestamp(new Date().toISOString()),
+      updatedAt: toTimestamp(updatedAt),
     });
-
-    const updated = await ref.get();
-    return mapRoom(updated.id, updated.data()!);
   }
 
   async deleteRoom(id: string): Promise<void> {
-    const ref = firestoreDb().collection("rooms").doc(id);
-    const current = await ref.get();
-    if (!current.exists) throw new Error(`Room not found: ${id}`);
-    await ref.delete();
+    await firestoreDb().collection("rooms").doc(id).delete();
   }
 
-  async setPinned(id: string, pinned: boolean): Promise<Room> {
-    const ref = firestoreDb().collection("rooms").doc(id);
-    const current = await ref.get();
-    if (!current.exists) throw new Error(`Room not found: ${id}`);
-
-    await ref.update({
-      isPinned: pinned,
-      updatedAt: toTimestamp(new Date().toISOString()),
-    });
-
-    const updated = await ref.get();
-    return mapRoom(updated.id, updated.data()!);
-  }
-
-  async touchLastOpened(
+  async setPinned(
     id: string,
-    openedAt = new Date().toISOString(),
-  ): Promise<Room> {
-    const ref = firestoreDb().collection("rooms").doc(id);
-    const current = await ref.get();
-    if (!current.exists) throw new Error(`Room not found: ${id}`);
+    pinned: boolean,
+    updatedAt: string,
+  ): Promise<void> {
+    await firestoreDb().collection("rooms").doc(id).update({
+      isPinned: pinned,
+      updatedAt: toTimestamp(updatedAt),
+    });
+  }
 
-    await ref.update({
+  async touchLastOpened(id: string, openedAt: string): Promise<void> {
+    await firestoreDb().collection("rooms").doc(id).update({
       lastOpenedAt: toTimestamp(openedAt),
     });
-
-    const updated = await ref.get();
-    return mapRoom(updated.id, updated.data()!);
   }
 }

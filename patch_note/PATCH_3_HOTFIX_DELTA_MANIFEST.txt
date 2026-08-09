@@ -1,0 +1,26 @@
+Kenangin Patch 3 Hotfix — changed/added files only
+
+app/api/health/route.ts
+app/api/rooms/[id]/open/route.ts
+app/globals.css
+components/rooms/room-open-tracker.tsx
+components/shell/profile-menu.tsx
+config/themes.ts
+lib/ai/gemini.ts
+lib/auth/client.ts
+lib/auth/owner-data.ts
+lib/auth/session.ts
+lib/data/firestore/firestore-room-repository.ts
+lib/data/firestore/firestore-user-repository.ts
+lib/data/mock/mock-room-repository.ts
+lib/data/providers/backend-repository-provider.ts
+lib/data/repositories/room-repository.ts
+lib/data/static/index.ts
+lib/data/static/static-theme-repository.ts
+lib/env/schema.ts
+lib/env/server.ts
+lib/firebase/admin.ts
+lib/rooms/service.ts
+lib/storage/b2.ts
+patch_note/PATCH_3_HOTFIX_AUDIT.md
+scripts/seed-dev.mjs

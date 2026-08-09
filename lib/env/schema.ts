@@ -46,3 +46,33 @@ export const serverEnvSchema = clientEnvSchema.extend({
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
+
+
+export const firebaseAdminEnvSchema = serverEnvSchema.pick({
+  FIREBASE_PROJECT_ID: true,
+  FIREBASE_CLIENT_EMAIL: true,
+  FIREBASE_PRIVATE_KEY: true,
+});
+
+export const b2EnvSchema = serverEnvSchema.pick({
+  B2_ENDPOINT: true,
+  B2_REGION: true,
+  B2_KEY_ID: true,
+  B2_APPLICATION_KEY: true,
+  B2_BUCKET: true,
+});
+
+export const geminiEnvSchema = serverEnvSchema.pick({
+  GEMINI_API_KEY: true,
+  GEMINI_TEXT_MODEL: true,
+  GEMINI_IMAGE_MODEL: true,
+  GEMINI_TIMEOUT_MS: true,
+});
+
+export const sessionEnvSchema = serverEnvSchema.pick({
+  SESSION_COOKIE_NAME: true,
+});
+
+export type FirebaseAdminEnv = z.infer<typeof firebaseAdminEnvSchema>;
+export type B2Env = z.infer<typeof b2EnvSchema>;
+export type GeminiEnv = z.infer<typeof geminiEnvSchema>;

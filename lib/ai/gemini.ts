@@ -1,7 +1,7 @@
 import "server-only";
 
 import { GoogleGenAI } from "@google/genai";
-import { getServerEnv } from "@/lib/env/server";
+import { getGeminiEnv } from "@/lib/env/server";
 import { withTimeout } from "@/lib/utils/timeout";
 
 let client: GoogleGenAI | null = null;
@@ -9,7 +9,7 @@ let client: GoogleGenAI | null = null;
 export function getGeminiClient(): GoogleGenAI {
   if (client) return client;
 
-  const env = getServerEnv();
+  const env = getGeminiEnv();
   if (!env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY belum diisi.");
   }
@@ -19,7 +19,7 @@ export function getGeminiClient(): GoogleGenAI {
 }
 
 export function getGeminiModelConfig() {
-  const env = getServerEnv();
+  const env = getGeminiEnv();
   return {
     textModel: env.GEMINI_TEXT_MODEL ?? "gemini-3.6-flash",
     imageModel: env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-lite-image",
