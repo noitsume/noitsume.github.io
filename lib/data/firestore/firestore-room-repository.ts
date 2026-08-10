@@ -5,6 +5,7 @@ import {
   roomSchema,
   type CreateRoomInput,
   type Room,
+  type RoomStatus,
   type UpdateRoomInput,
 } from "@/lib/data/contracts";
 import type { RoomRepository } from "@/lib/data/repositories";
@@ -74,6 +75,16 @@ export class FirestoreRoomRepository implements RoomRepository {
     return mapRoom(snapshot.id, snapshot.data()!);
   }
 
+  async getRoomByCollectorId(collectorId: string): Promise<Room | null> {
+    const snapshot = await firestoreDb()
+      .collection("rooms")
+      .where("collectorId", "==", collectorId)
+      .limit(1)
+      .get();
+    const doc = snapshot.docs[0];
+    return doc ? mapRoom(doc.id, doc.data()) : null;
+  }
+
   async createRoom(ownerUid: string, input: CreateRoomInput): Promise<Room> {
     const id = createId("room");
     const now = new Date().toISOString();
@@ -137,6 +148,17 @@ export class FirestoreRoomRepository implements RoomRepository {
   ): Promise<void> {
     await firestoreDb().collection("rooms").doc(id).update({
       isPinned: pinned,
+      updatedAt: toTimestamp(updatedAt),
+    });
+  }
+
+  async setStatus(
+    id: string,
+    status: RoomStatus,
+    updatedAt: string,
+  ): Promise<void> {
+    await firestoreDb().collection("rooms").doc(id).update({
+      status,
       updatedAt: toTimestamp(updatedAt),
     });
   }

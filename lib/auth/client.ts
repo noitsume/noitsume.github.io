@@ -1,12 +1,13 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import { signOut } from "firebase/auth";
+import { inMemoryPersistence, setPersistence, signInWithCustomToken, signOut } from "firebase/auth";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
 const CSRF_CLIENT_CACHE_MS = 10 * 60 * 1000;
 let csrfCache: { token: string; expiresAt: number } | null = null;
 let csrfInFlight: Promise<string> | null = null;
+let firestoreAuthInFlight: Promise<void> | null = null;
 
 export async function getCsrfToken(): Promise<string> {
   const now = Date.now();
@@ -34,6 +35,33 @@ export async function getCsrfToken(): Promise<string> {
     return await csrfInFlight;
   } finally {
     csrfInFlight = null;
+  }
+}
+
+
+export async function ensureFirestoreReadSession() {
+  const auth = getFirebaseClientAuth();
+  if (auth.currentUser) return;
+  if (firestoreAuthInFlight) return firestoreAuthInFlight;
+
+  firestoreAuthInFlight = (async () => {
+    await setPersistence(auth, inMemoryPersistence);
+    const response = await fetch("/api/auth/firestore-token", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload?.ok || !payload?.data?.token) {
+      throw new Error(payload?.error?.message ?? "Sinkronisasi workspace tidak dapat diaktifkan.");
+    }
+    await signInWithCustomToken(auth, payload.data.token as string);
+  })();
+
+  try {
+    await firestoreAuthInFlight;
+  } finally {
+    firestoreAuthInFlight = null;
   }
 }
 
@@ -75,6 +103,8 @@ export async function destroyServerSession() {
     throw new Error(payload?.error?.message ?? "Gagal keluar dari akun.");
   }
 
+  await signOut(getFirebaseClientAuth()).catch(() => undefined);
+  firestoreAuthInFlight = null;
   csrfCache = null;
 }
 

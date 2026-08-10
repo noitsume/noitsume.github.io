@@ -1,6 +1,7 @@
 import type {
   CreateRoomInput,
   Room,
+  RoomStatus,
   UpdateRoomInput,
 } from "@/lib/data/contracts";
 import type { RoomRepository } from "@/lib/data/repositories";
@@ -20,6 +21,11 @@ export class MockRoomRepository implements RoomRepository {
 
   async getRoom(id: string): Promise<Room | null> {
     const room = this.rooms.find((candidate) => candidate.id === id);
+    return room ? structuredClone(room) : null;
+  }
+
+  async getRoomByCollectorId(collectorId: string): Promise<Room | null> {
+    const room = this.rooms.find((candidate) => candidate.collectorId === collectorId);
     return room ? structuredClone(room) : null;
   }
 
@@ -74,6 +80,14 @@ export class MockRoomRepository implements RoomRepository {
     this.updateExisting(id, (room) => ({
       ...room,
       isPinned: pinned,
+      updatedAt,
+    }));
+  }
+
+  async setStatus(id: string, status: RoomStatus, updatedAt: string): Promise<void> {
+    this.updateExisting(id, (room) => ({
+      ...room,
+      status,
       updatedAt,
     }));
   }

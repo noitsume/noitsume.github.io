@@ -3,6 +3,7 @@ import "server-only";
 import { roomSchema, type Room, type UpdateRoomInput } from "@/lib/data/contracts";
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
 import { ApiError } from "@/lib/http";
+import { deletePrivatePrefixCompletely } from "@/lib/storage";
 
 // Recent-room tracking is informational, not critical business data.
 // Keep at most one Firestore write per room per owner per hour.
@@ -16,6 +17,13 @@ export async function getOwnedRoom(ownerUid: string, roomId: string) {
   if (room.ownerUid !== ownerUid) {
     throw new ApiError("ROOM_FORBIDDEN", "Kamu tidak memiliki akses ke Room ini.", 403);
   }
+
+  if (room.status === "collecting" && Date.parse(room.collectionDeadline) <= Date.now()) {
+    const updatedAt = new Date().toISOString();
+    await backendRepositories.rooms.setStatus(room.id, "closed", updatedAt);
+    return roomSchema.parse({ ...room, status: "closed", updatedAt });
+  }
+
   return room;
 }
 
@@ -37,6 +45,30 @@ export async function updateOwnedRoom(
 
 export async function deleteOwnedRoom(ownerUid: string, roomId: string) {
   await getOwnedRoom(ownerUid, roomId);
+  const [submissions, media] = await Promise.all([
+    backendRepositories.submissions.listByRoom(roomId),
+    backendRepositories.media.listByRoom(roomId),
+  ]);
+
+  // Storage cleanup is a hard precondition for deleting Room metadata.
+  // Purge the whole Room prefix rather than trusting Firestore as the complete
+  // object index: interrupted uploads/migrations can leave orphan objects, and
+  // B2 keeps object versions unless a specific version is deleted.
+  try {
+    await deletePrivatePrefixCompletely(`rooms/${roomId}/`);
+  } catch (error) {
+    console.error(`[room-delete] B2 cleanup failed for ${roomId}`, error);
+    throw new ApiError(
+      "ROOM_STORAGE_CLEANUP_FAILED",
+      "Media Room belum berhasil dibersihkan dari storage. Room tidak dihapus; coba lagi setelah koneksi/izin B2 normal.",
+      503,
+    );
+  }
+
+  await backendRepositories.media.deleteMany(roomId, media.map((item) => item.id));
+  for (const submission of submissions) {
+    await backendRepositories.submissions.deleteSubmission(roomId, submission.id);
+  }
   await backendRepositories.rooms.deleteRoom(roomId);
 }
 

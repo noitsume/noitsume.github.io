@@ -6,7 +6,10 @@ import type {
 } from "@/lib/data/contracts";
 import type {
   AnalyticsRepository,
+  MediaCreateManyResult,
   MediaRepository,
+  SubmissionApprovalResult,
+  SubmissionCreateResult,
   SubmissionRepository,
   ThemeRepository,
 } from "@/lib/data/repositories";
@@ -18,9 +21,32 @@ export class MockMediaRepository implements MediaRepository {
     return [];
   }
 
-  async getById(id: string): Promise<Media | null> {
+  async getById(roomId: string, id: string): Promise<Media | null> {
+    void roomId;
     void id;
     return null;
+  }
+
+  async createMany(media: Media[]): Promise<MediaCreateManyResult> {
+    void media;
+    return "created";
+  }
+
+  async updateStorageObjectKeys(
+    updates: Array<{ roomId: string; mediaId: string; storageObjectKey: string }>,
+  ): Promise<void> {
+    void updates;
+  }
+
+  async updateAnalysis(roomId: string, mediaId: string, media: Media): Promise<void> {
+    void roomId;
+    void mediaId;
+    void media;
+  }
+
+  async deleteMany(roomId: string, mediaIds: string[]): Promise<void> {
+    void roomId;
+    void mediaIds;
   }
 }
 
@@ -30,9 +56,47 @@ export class MockSubmissionRepository implements SubmissionRepository {
     return [];
   }
 
-  async getById(id: string): Promise<Submission | null> {
+  async getById(roomId: string, id: string): Promise<Submission | null> {
+    void roomId;
     void id;
     return null;
+  }
+
+  async createPending(submission: Submission): Promise<SubmissionCreateResult> {
+    void submission;
+    return "created";
+  }
+
+  async approveWithMedia(
+    roomId: string,
+    submissionId: string,
+    media: Media[],
+    reviewedAt: string,
+  ): Promise<SubmissionApprovalResult> {
+    void roomId;
+    void submissionId;
+    void media;
+    void reviewedAt;
+    return "updated";
+  }
+
+  async updateStatuses(
+    roomId: string,
+    submissionIds: string[],
+    status: Submission["status"],
+    reviewedAt: string,
+    options?: { clearStagedMedia?: boolean; clearMediaIds?: boolean },
+  ): Promise<void> {
+    void roomId;
+    void submissionIds;
+    void status;
+    void reviewedAt;
+    void options;
+  }
+
+  async deleteSubmission(roomId: string, submissionId: string): Promise<void> {
+    void roomId;
+    void submissionId;
   }
 }
 
