@@ -1,0 +1,86 @@
+KENANGIN PATCH 7 — SETTINGS STUDIO + STORY ANCHORS + EXPERIENCE DIRECTOR
+Baseline: kenangin_Patch 6 Finished v2.zip
+
+STATUS
+- Patch 7 implementation: COMPLETE at source level.
+- Next implementation boundary: Patch 8 Bake Engine + Receiver Manifest + Private Asset Delivery.
+- Patch 7 intentionally does NOT publish Receiver snapshots or generate receiverId/token. It only prepares and validates the final ExperienceDNA selected by the owner.
+
+IMPLEMENTED
+1. Room progress state machine UI
+   Mengumpulkan -> Ditutup -> Mengatur -> Bake -> Selesai
+   - New Room status: baking.
+   - Reusable RoomProgress component.
+   - Closed -> Studio server gate checks no pending submissions and >= 1 permanent media.
+   - Bake and Finish frontend shells are prepared for Patch 8 handoff.
+
+2. Settings Studio (/rooms/[roomId]/studio)
+   - Strict progressive gates: Media -> Story Anchors -> Music -> Direction.
+   - Owner selects exactly which permanent media enter the experience.
+   - Every selected VIDEO becomes one section.
+   - All selected PHOTOS are grouped into one photo-slide section.
+   - Manual media ordering.
+   - Video foreground volume per media.
+   - Trim in/out, loop, fit cover/contain.
+   - Theme selection from Patch 6 catalog.
+   - User settings are deterministic hard constraints; Gemini cannot overwrite volume/trim/loop/fit or drop selected media.
+
+3. Story Anchors
+   - Optional Opening / Climax / Ending guidance among selected media.
+   - Owner may explicitly continue without anchors.
+   - Anchor media can trigger best-effort selective Deep Analysis before direction generation.
+   - Deep Analysis failure never blocks generation.
+
+4. Background Music
+   - Curated Kenangin templates remain available.
+   - Owner may upload MP3 directly browser -> private B2.
+   - Room-scoped permanent music identity under rooms/{roomId}/music/{musicId}.mp3.
+   - Analyze action is required before an uploaded MP3 can pass the Music gate.
+   - Browser Web Audio analysis produces SHA-256, duration, BPM, beats, onsets, energy curve, mood and intro/build/peak/outro ranges.
+   - Analysis metadata is stored in Firestore rooms/{roomId}/music/{musicId}.
+   - Global background music policy is continuous: scroll/section changes do not pause, seek, or restart the beat timeline.
+   - Section audio mix is music-full or auto-duck based on foreground media/audio state.
+   - Global mix contract preserves beat timeline and caps background below foreground when auto-duck is active.
+
+5. Wish Intelligence
+   - Approved contributor wishes get reusable wish-v1 metadata.
+   - Labels: funny, sentimental, intimate, celebratory, reflective, closing-worthy.
+   - Cached by SHA-256 source-text hash in Room Studio config.
+   - Gemini structured classification first; deterministic classification fallback on failure.
+   - Original contributor wish text is never rewritten.
+
+6. Gemini Experience Director
+   - Structured Gemini output only.
+   - Inputs: permanent Media Intelligence, optional anchors, cached Wish Intelligence, music intelligence, Theme personality, Aura/Transition catalogs and owner settings.
+   - Up to 3 direction candidates.
+   - 30s minimum Director timeout before deterministic fallback.
+   - Gemini only proposes role/Aura/transition/pacing/intensity/beat alignment/wish placement/micro-copy.
+   - Aura and Transition selections are filtered to Theme-compatible catalog IDs.
+   - Section/media inclusion and owner media settings are rebuilt deterministically by code after Gemini output.
+   - Deterministic fallback includes every selected media and uses Story Anchors when present.
+
+7. Versioned ExperienceDNA
+   - experience schemaVersion 1 / director-v1.
+   - Global continuous background music + global mix policy.
+   - Hero + section-oriented execution plan.
+   - Per-section Aura, transitions, dwell, role, visual intensity, beat alignment, audioMix, media treatment, micro-copy and wish IDs.
+   - No HTML/CSS/JavaScript/external URL/executable payload from Gemini.
+
+8. Direction Preview + Bake readiness
+   - Owner compares generated direction candidates and selects one.
+   - Deterministic preview map shows Hero/video/photo-slide execution plan and tuning.
+   - Selected ExperienceDNA becomes the Patch 8 Bake input.
+   - Patch 8 will own preflight -> status=baking -> public snapshot -> receiverId/token -> status=ready.
+
+DATA / SECURITY
+- Added rooms/{roomId}/music Firestore repository and owner-only Firestore read rule; mutations remain server-only.
+- MP3 upload is direct browser-to-B2 via owner-authorized presigned PUT.
+- Signed B2 URLs remain temporary delivery URLs and are not permanent music identity.
+- Studio and music writes require owner session + CSRF.
+
+VERIFICATION PERFORMED IN ASSISTANT ENVIRONMENT
+- Local import-path audit: PASS.
+- TypeScript isolated syntax transpile over project TS/TSX: PASS.
+- CSS brace integrity: PASS.
+- Next.js current official docs checked for async dynamic route params and route segment maxDuration conventions.
+- Full npm install/check could not run because the execution registry returns 404 for existing transitive dependency zod-validation-error@4.0.2. Run npm run check in the user's local project before deploy.

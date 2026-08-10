@@ -1,0 +1,53 @@
+KENANGIN PATCH 7 — CHANGED FILES
+Baseline: kenangin_Patch 6 Finished v2.zip
+
+ADDED (30)
++ PATCH_7_CHANGED_FILES.txt
++ README_PATCH_7.md
++ app/api/rooms/[id]/music/[musicId]/analyze/route.ts
++ app/api/rooms/[id]/music/[musicId]/download-url/route.ts
++ app/api/rooms/[id]/music/[musicId]/route.ts
++ app/api/rooms/[id]/music/commit/route.ts
++ app/api/rooms/[id]/music/upload-url/route.ts
++ app/api/rooms/[id]/studio/generate/route.ts
++ app/api/rooms/[id]/studio/select-direction/route.ts
++ app/api/rooms/[id]/studio/settings/route.ts
++ app/api/rooms/[id]/studio/start/route.ts
++ app/rooms/[id]/bake/page.tsx
++ app/rooms/[id]/finish/page.tsx
++ app/rooms/[id]/studio/page.tsx
++ components/rooms/room-progress.tsx
++ components/studio/bake-progress-shell.tsx
++ components/studio/index.ts
++ components/studio/receiver-finish-card.tsx
++ components/studio/settings-studio.tsx
++ lib/data/firestore/firestore-room-music-repository.ts
++ lib/data/repositories/room-music-repository.ts
++ lib/studio/contracts.ts
++ lib/studio/director.ts
++ lib/studio/index.ts
++ lib/studio/music-client.ts
++ lib/studio/section-plan.ts
++ lib/studio/service.ts
++ lib/studio/wish-intelligence.ts
++ patch_note/PATCH_7_ARCHITECTURE.md
++ patch_note/PATCH_7_MANIFEST.txt
+
+MODIFIED (15)
+~ app/globals.css
+~ app/rooms/[id]/page.tsx
+~ components/collector/media-inventory.tsx
+~ components/collector/room-workspace-live.tsx
+~ components/collector/submission-manager.tsx
+~ components/rooms/index.ts
+~ firestore.rules
+~ lib/creative/contracts.ts
+~ lib/data/contracts/room.ts
+~ lib/data/firestore/firestore-room-repository.ts
+~ lib/data/firestore/index.ts
+~ lib/data/mock/mock-room-repository.ts
+~ lib/data/providers/backend-repository-provider.ts
+~ lib/data/repositories/index.ts
+~ lib/data/repositories/room-repository.ts
+
+DELETED (0)

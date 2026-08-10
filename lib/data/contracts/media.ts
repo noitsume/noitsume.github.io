@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auraIdSchema, type AuraId as CreativeAuraId } from "@/lib/creative/ids";
 import {
   analysisModeSchema,
   mediaAnalysisStatusSchema,
@@ -6,14 +7,7 @@ import {
   technicalSignalsSchema,
 } from "@/lib/media-intelligence/contracts";
 
-export const auraIdSchema = z.enum([
-  "neutral",
-  "soft",
-  "pulse",
-  "lightning",
-  "particles",
-  "cinematic",
-]);
+export { auraIdSchema };
 
 export const mediaSourceSchema = z.enum(["contributor", "owner"]);
 
@@ -62,7 +56,7 @@ export const mediaInstanceSchema = z.object({
   auraId: auraIdSchema.nullable(),
 });
 
-export type AuraId = z.infer<typeof auraIdSchema>;
+export type AuraId = CreativeAuraId;
 export type MediaSource = z.infer<typeof mediaSourceSchema>;
 export type Media = z.infer<typeof mediaSchema>;
 export type MediaInstance = z.infer<typeof mediaInstanceSchema>;

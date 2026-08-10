@@ -18,7 +18,8 @@
     "firebase:deploy": "firebase deploy --only firestore:rules,firestore:indexes",
     "seed:dev": "node --env-file=.env.local scripts/seed-dev.mjs",
     "b2:cors": "node --env-file=.env.local scripts/configure-b2-cors.mjs",
-    "infra:check": "node --env-file=.env.local scripts/infra-check.mjs"
+    "infra:check": "node --env-file=.env.local scripts/infra-check.mjs",
+    "songs:analyze": "python3 tools/song-analysis/analyze.py public/creative/songs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1095.0",

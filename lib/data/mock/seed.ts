@@ -4,6 +4,7 @@ import type {
   Theme,
   UserProfile,
 } from "@/lib/data/contracts";
+import { curatedThemes } from "@/config/themes";
 
 function addDays(base: Date, days: number): string {
   const result = new Date(base);
@@ -104,20 +105,7 @@ export function createMockRooms(now = new Date()): Room[] {
 }
 
 export function createMockThemes(): Theme[] {
-  return [
-    {
-      id: "theme_warm_memory",
-      name: "Warm Memory",
-      backgroundUrl: "",
-      palette: {
-        primary: "#FF6161",
-        accent: "#F2A63D",
-        surface: "#211B16",
-      },
-      ornaments: [],
-      occasionIds: ["birthday", "graduation", "anniversary"],
-    },
-  ];
+  return structuredClone(curatedThemes);
 }
 
 export function createMockEvents(now = new Date()): EventDefinition[] {

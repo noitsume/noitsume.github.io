@@ -4,6 +4,7 @@ export const roomStatusSchema = z.enum([
   "collecting",
   "closed",
   "configuring",
+  "baking",
   "ready",
 ]);
 

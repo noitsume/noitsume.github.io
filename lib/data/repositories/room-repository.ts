@@ -14,5 +14,6 @@ export interface RoomRepository {
   deleteRoom(id: string): Promise<void>;
   setPinned(id: string, pinned: boolean, updatedAt: string): Promise<void>;
   setStatus(id: string, status: RoomStatus, updatedAt: string): Promise<void>;
+  setConfig(id: string, config: Room["config"], updatedAt: string): Promise<void>;
   touchLastOpened(id: string, openedAt: string): Promise<void>;
 }

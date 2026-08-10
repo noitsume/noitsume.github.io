@@ -163,6 +163,17 @@ export class FirestoreRoomRepository implements RoomRepository {
     });
   }
 
+  async setConfig(
+    id: string,
+    config: Room["config"],
+    updatedAt: string,
+  ): Promise<void> {
+    await firestoreDb().collection("rooms").doc(id).update({
+      config,
+      updatedAt: toTimestamp(updatedAt),
+    });
+  }
+
   async touchLastOpened(id: string, openedAt: string): Promise<void> {
     await firestoreDb().collection("rooms").doc(id).update({
       lastOpenedAt: toTimestamp(openedAt),

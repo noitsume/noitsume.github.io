@@ -92,6 +92,14 @@ export class MockRoomRepository implements RoomRepository {
     }));
   }
 
+  async setConfig(id: string, config: Room["config"], updatedAt: string): Promise<void> {
+    this.updateExisting(id, (room) => ({
+      ...room,
+      config,
+      updatedAt,
+    }));
+  }
+
   async touchLastOpened(id: string, openedAt: string): Promise<void> {
     this.updateExisting(id, (room) => ({
       ...room,

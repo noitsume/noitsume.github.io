@@ -158,6 +158,8 @@ export function RoomWorkspaceLive({
   const [roomStatus, setRoomStatus] = useState<RoomStatus>(initialRoomStatus);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncActive, setSyncActive] = useState(false);
+  const [studioStarting, setStudioStarting] = useState(false);
+  const [studioError, setStudioError] = useState<string | null>(null);
   const stagedSubmissions = useRef(initialWorkspace.submissions);
   const stagedMedia = useRef(initialWorkspace.media);
   const previewRef = useRef(initialWorkspace.previewUrlByMediaId);
@@ -385,6 +387,39 @@ export function RoomWorkspaceLive({
     setMedia((current) => mergeById(current, [updated]));
   }
 
+  async function enterStudio() {
+    if (studioStarting) return;
+    setStudioError(null);
+
+    if (roomStatus === "configuring" || roomStatus === "ready") {
+      router.push(`/rooms/${encodeURIComponent(roomId)}/studio`);
+      return;
+    }
+    if (roomStatus !== "closed") return;
+
+    setStudioStarting(true);
+    try {
+      const csrfToken = await getCsrfToken();
+      const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/studio/start`, {
+        method: "POST",
+        headers: { "x-csrf-token": csrfToken },
+        credentials: "same-origin",
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error?.message ?? "Settings Studio belum dapat dibuka.");
+      }
+      roomStatusRef.current = "configuring";
+      setRoomStatus("configuring");
+      router.push(`/rooms/${encodeURIComponent(roomId)}/studio`);
+      router.refresh();
+    } catch (error) {
+      setStudioError(error instanceof Error ? error.message : "Settings Studio belum dapat dibuka.");
+    } finally {
+      setStudioStarting(false);
+    }
+  }
+
   const contributorSubmissions = useMemo(
     () => submissions.filter((item) => item.source === "contributor"),
     [submissions],
@@ -407,6 +442,8 @@ export function RoomWorkspaceLive({
     .map((submission) => submission.contributorName?.trim())
     .filter((name): name is string => Boolean(name));
   const isCollecting = roomStatus === "collecting";
+  const studioGateReady = pendingSubmissions.length === 0 && inventoryMedia.length > 0;
+  const studioButtonEnabled = roomStatus === "configuring" || roomStatus === "ready" || (roomStatus === "closed" && studioGateReady);
 
   return (
     <>
@@ -484,6 +521,22 @@ export function RoomWorkspaceLive({
               <div><span className="room-review-pulse__icon room-review-pulse__icon--success">✓</span><small>Approved</small><strong>{approvedCount}</strong></div>
               <div><span className="room-review-pulse__icon room-review-pulse__icon--amber">•</span><small>Pending</small><strong>{pendingSubmissions.length}</strong></div>
             </div>
+          </Surface>
+
+          <Surface className="room-studio-gate" tone="quiet">
+            <div className="room-studio-gate__heading">
+              <div><p className="ui-eyebrow">NEXT GATE</p><h3>Settings Studio</h3></div>
+              <span>{studioGateReady ? "Ready" : "Locked"}</span>
+            </div>
+            <div className="room-studio-gate__checks">
+              <span className={!isCollecting ? "is-done" : ""}><i>{!isCollecting ? "✓" : "1"}</i>Collector ditutup</span>
+              <span className={pendingSubmissions.length === 0 ? "is-done" : ""}><i>{pendingSubmissions.length === 0 ? "✓" : "2"}</i>Review submission selesai</span>
+              <span className={inventoryMedia.length > 0 ? "is-done" : ""}><i>{inventoryMedia.length > 0 ? "✓" : "3"}</i>Minimal 1 media tersedia</span>
+            </div>
+            <button className="ui-button ui-button--primary room-studio-gate__button" disabled={!studioButtonEnabled || studioStarting} onClick={enterStudio} type="button">
+              {studioStarting ? "Membuka Studio..." : roomStatus === "configuring" || roomStatus === "ready" ? "Buka Settings Studio" : "Mulai Mengatur"}
+            </button>
+            {studioError ? <p className="form-error" role="alert">{studioError}</p> : null}
           </Surface>
 
           <Surface className="room-deadline-card" tone="quiet">

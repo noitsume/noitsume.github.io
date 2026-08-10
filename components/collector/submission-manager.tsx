@@ -48,10 +48,12 @@ export function SubmissionManager({
   const mediaById = useMemo(() => new Map(media.map((item) => [item.id, item])), [media]);
 
   const availableSubmissionIds = useMemo(() => new Set(submissions.map((item) => item.id)), [submissions]);
-  const selectedIds = selected.filter((id) => availableSubmissionIds.has(id));
-  const selectedIdSet = new Set(selectedIds);
+  const activeSelected = useMemo(
+    () => selected.filter((id) => availableSubmissionIds.has(id)),
+    [availableSubmissionIds, selected],
+  );
 
-  async function runAction(action: "approve" | "exclude" | "delete", ids = selectedIds) {
+  async function runAction(action: "approve" | "exclude" | "delete", ids = activeSelected) {
     if (inFlightRef.current || ids.length === 0) return;
     if (action === "delete" && !window.confirm(`Hapus ${ids.length} submission beserta media aslinya dari B2?`)) return;
 
@@ -92,7 +94,7 @@ export function SubmissionManager({
     );
   }
 
-  const allSelected = submissions.length > 0 && selectedIds.length === submissions.length;
+  const allSelected = activeSelected.length === submissions.length;
 
   return (
     <div className="submission-manager">
@@ -103,12 +105,12 @@ export function SubmissionManager({
             onChange={(event) => setSelected(event.target.checked ? submissions.map((item) => item.id) : [])}
             type="checkbox"
           />
-          <span>{selectedIds.length > 0 ? `${selectedIds.length} dipilih` : "Pilih semua"}</span>
+          <span>{activeSelected.length > 0 ? `${activeSelected.length} dipilih` : "Pilih semua"}</span>
         </label>
         <div className="submission-toolbar__actions">
-          <Button disabled={busy || selectedIds.length === 0} variant="secondary" onClick={() => runAction("approve")}><CheckIcon size={16} /> Approve</Button>
-          <Button disabled={busy || selectedIds.length === 0} variant="ghost" onClick={() => runAction("exclude")}>Exclude</Button>
-          <Button className="submission-action--danger" disabled={busy || selectedIds.length === 0} variant="ghost" onClick={() => runAction("delete")}><TrashIcon size={16} /> Hapus</Button>
+          <Button disabled={busy || activeSelected.length === 0} variant="secondary" onClick={() => runAction("approve")}><CheckIcon size={16} /> Approve</Button>
+          <Button disabled={busy || activeSelected.length === 0} variant="ghost" onClick={() => runAction("exclude")}>Exclude</Button>
+          <Button className="submission-action--danger" disabled={busy || activeSelected.length === 0} variant="ghost" onClick={() => runAction("delete")}><TrashIcon size={16} /> Hapus</Button>
         </div>
       </div>
 
@@ -119,11 +121,11 @@ export function SubmissionManager({
           const submissionMedia: Array<StagedSubmissionMedia | Media> = submission.stagedMedia.length > 0
             ? submission.stagedMedia
             : submission.mediaIds.map((id) => mediaById.get(id)).filter((item): item is Media => Boolean(item));
-          const checked = selectedIdSet.has(submission.id);
+          const checked = activeSelected.includes(submission.id);
           return (
             <article className={`submission-card ${checked ? "submission-card--selected" : ""}`} key={submission.id}>
               <header className="submission-card__header">
-                <label className="submission-card__check"><input checked={checked} onChange={(event) => setSelected((current) => event.target.checked ? (current.includes(submission.id) ? current : [...current, submission.id]) : current.filter((id) => id !== submission.id))} type="checkbox" /></label>
+                <label className="submission-card__check"><input checked={checked} onChange={(event) => setSelected((current) => event.target.checked ? [...current, submission.id] : current.filter((id) => id !== submission.id))} type="checkbox" /></label>
                 <div className="submission-card__identity">
                   <strong>{submission.contributorName || "Anonim"}</strong>
                   <span>{formatSubmittedAt(submission.submittedAt)} · {submissionMedia.length} media</span>

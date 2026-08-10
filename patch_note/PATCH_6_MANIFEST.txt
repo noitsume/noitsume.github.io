@@ -1,0 +1,33 @@
+PATCH 6 — Theme + Music + Creative Catalog Foundation
+
+BASELINE
+- kenangin_Patch 5 Finished.zip
+
+IMPLEMENTED
+- 5 versioned MVP themes with durable public asset references
+- Theme palettes, ornaments, anchors, typography, motion personality, theme personality
+- Versioned Aura Catalog with renderer keys and reduced-motion behavior
+- Versioned Transition Catalog with compatibility and reduced-motion fallback
+- 3 curated Kenangin Original WAV tracks with stable SHA-256 asset identity (fallback/default/demo)
+- Background music selection contract supports curated catalog OR future Room-uploaded music
+- RoomMusic + continuous audio-mix policy foundation for Patch 7/9
+- Beatmap metadata: duration, BPM, beats, onsets, energy curve, intro/build/peak/outro
+- Pure-Python development-time `npm run songs:analyze` tooling
+- Creative catalog resolver + compatibility validation + unknown-ID rejection
+- Hardcoded Media Aura enum migrated to the official Aura ID catalog
+- Development-only /dev/theme-anchor tool with preview, local draft persistence, and JSON export
+- Theme Anchor localStorage synchronization uses useSyncExternalStore (no setState-in-effect lint violation)
+
+NOT PART OF PATCH 6
+- Room music upload UI/API + runtime music analysis (Patch 7)
+- Section-oriented ExperienceDNA / Gemini Experience Director (Patch 7)
+- Bake / final Receiver Manifest migration (Patch 8)
+- Aura/Transition runtime renderer + continuous music ducking controller (Patch 9)
+- Dedicated media worker
+
+VERIFICATION PERFORMED IN THIS ENVIRONMENT
+- `npm run songs:analyze -- --verify-hash-folder` PASS
+- creative public asset/hash audit PASS
+- TypeScript transpile/syntax audit for changed TS/TSX PASS
+- audio sanity check PASS (non-silent, no clipping)
+- full `npm run check` BLOCKED by package registry 404 for existing project dependencies; no full dependency install was possible here

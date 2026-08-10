@@ -27,6 +27,11 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /music/{musicId} {
+        allow read: if ownsRoom(roomId);
+        allow write: if false;
+      }
+
       match /submissions/{submissionId} {
         allow read: if ownsRoom(roomId);
         allow write: if false;

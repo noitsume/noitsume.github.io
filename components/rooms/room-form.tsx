@@ -50,7 +50,7 @@ export function RoomForm({
   );
 
   const themeOptions = useMemo<SelectOption[]>(
-    () => themes.map((theme) => ({ value: theme.id, label: theme.name, description: `${theme.palette.primary} · tema pilot` })),
+    () => themes.map((theme) => ({ value: theme.id, label: theme.name, description: `${theme.themePersonality.slice(0, 3).join(" · ")} · ${theme.motionPersonality}` })),
     [themes],
   );
 
@@ -156,7 +156,7 @@ export function RoomForm({
             disabled={themes.length === 0}
             placeholder="Pilih tema"
           />
-          <small>{selectedTheme ? `${selectedTheme.name} · tema pilot` : "Pilih tema"}</small>
+          <small>{selectedTheme ? `${selectedTheme.name} · ${selectedTheme.themePersonality.join(" · ")}` : "Pilih tema"}</small>
         </div>
 
         <label className="form-field">

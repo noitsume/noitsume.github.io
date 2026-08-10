@@ -1,0 +1,36 @@
+Kenangin Patch 6 Hotfix + Audio/Section Foundation
+Baseline: kenangin_Patch 6 Finished.zip
+
+MODIFIED (5)
+- components/dev/theme-anchor-tool.tsx
+- lib/creative/catalog.ts
+- lib/creative/contracts.ts
+- lib/creative/ids.ts
+- patch_note/PATCH_6_MANIFEST.txt
+
+ADDED (1)
+- patch_note/PATCH_6_AUDIO_SECTION_CLARIFICATION.md
+
+ROADMAP ARTIFACT UPDATED SEPARATELY
+- Roadmap Development Kenangin — 12 Patch (Adjusted after Patch 6 Audio-Section Clarification).md
+
+IMPLEMENTED NOW
+- Fix react-hooks/set-state-in-effect errors in Theme Anchor Tool.
+- localStorage draft persistence moved to useSyncExternalStore.
+- CreativeSelection background music can be curated catalog or future Room upload.
+- RoomMusic schema foundation with B2 audio reference + reusable music analysis metadata.
+- Continuous background-music mix policy foundation.
+- Per-section audio mix instruction vocabulary.
+- Curated songs remain fallback/default/demo, not a closed production requirement.
+
+DEFERRED TO PATCH 7
+- Owner background-music upload UI/API.
+- Direct B2 upload for Room music.
+- Runtime analysis/beatmap generation for uploaded music.
+- Section-oriented ExperienceDNA + Settings Studio.
+
+DEFERRED TO PATCH 9
+- BackgroundMusicController / AudioMixController runtime.
+- Smooth audio ducking on audible media.
+- Restore music on photo/silent-video sections.
+- Scroll-driven activation of complete section tuning.

@@ -1,0 +1,52 @@
+PATCH 6 CHANGED FILES
+
+MODIFIED (7)
+- app/globals.css
+- components/rooms/room-form.tsx
+- config/themes.ts
+- lib/data/contracts/media.ts
+- lib/data/contracts/theme.ts
+- lib/data/mock/seed.ts
+- package.json
+
+ADDED (38)
+- app/dev/theme-anchor/page.tsx
+- components/dev/theme-anchor-tool.tsx
+- config/auras.ts
+- config/songs.ts
+- config/transitions.ts
+- lib/creative/catalog.ts
+- lib/creative/contracts.ts
+- lib/creative/ids.ts
+- lib/creative/index.ts
+- patch_note/PATCH_6_CHANGED_FILES.txt
+- patch_note/PATCH_6_MANIFEST.txt
+- patch_note/README_PATCH_6.md
+- public/creative/songs/30f4b44eecf5e0e43c3773abbe180b67362cb220b6db5bd9417610d494f944b1/analysis-hints.json
+- public/creative/songs/30f4b44eecf5e0e43c3773abbe180b67362cb220b6db5bd9417610d494f944b1/beatmap.json
+- public/creative/songs/30f4b44eecf5e0e43c3773abbe180b67362cb220b6db5bd9417610d494f944b1/track.wav
+- public/creative/songs/7d89cc662f46c0c3dbf2d1d6f1e3da5da3302d64f20f246e4a09fffdd1b275bd/analysis-hints.json
+- public/creative/songs/7d89cc662f46c0c3dbf2d1d6f1e3da5da3302d64f20f246e4a09fffdd1b275bd/beatmap.json
+- public/creative/songs/7d89cc662f46c0c3dbf2d1d6f1e3da5da3302d64f20f246e4a09fffdd1b275bd/track.wav
+- public/creative/songs/ee472cb744494d875a26249cfae78334f0ba94ee3373d57ce57c9b84963f6ac0/analysis-hints.json
+- public/creative/songs/ee472cb744494d875a26249cfae78334f0ba94ee3373d57ce57c9b84963f6ac0/beatmap.json
+- public/creative/songs/ee472cb744494d875a26249cfae78334f0ba94ee3373d57ce57c9b84963f6ac0/track.wav
+- public/creative/themes/theme_golden_celebration/background.svg
+- public/creative/themes/theme_golden_celebration/ornament-confetti.svg
+- public/creative/themes/theme_golden_celebration/ornament-spark.svg
+- public/creative/themes/theme_midnight_bloom/background.svg
+- public/creative/themes/theme_midnight_bloom/ornament-bloom.svg
+- public/creative/themes/theme_midnight_bloom/ornament-star.svg
+- public/creative/themes/theme_paper_daydream/background.svg
+- public/creative/themes/theme_paper_daydream/ornament-doodle.svg
+- public/creative/themes/theme_paper_daydream/ornament-tape.svg
+- public/creative/themes/theme_starlit_graduation/background.svg
+- public/creative/themes/theme_starlit_graduation/ornament-arc.svg
+- public/creative/themes/theme_starlit_graduation/ornament-stars.svg
+- public/creative/themes/theme_warm_memory/background.svg
+- public/creative/themes/theme_warm_memory/ornament-glow.svg
+- public/creative/themes/theme_warm_memory/ornament-leaf.svg
+- tools/song-analysis/README.md
+- tools/song-analysis/analyze.py
+
+REMOVED (0)
