@@ -11,6 +11,7 @@ import { getOwnerSession } from "@/lib/auth/session";
 import type { Room } from "@/lib/data/contracts";
 import { ApiError } from "@/lib/http";
 import { getOwnedRoom } from "@/lib/rooms";
+import { getPublishedReceiver } from "@/lib/receiver";
 
 export const metadata: Metadata = { title: "Receiver Selesai" };
 type PageProps = { params: Promise<{ id: string }> };
@@ -23,12 +24,12 @@ export default async function FinishPage({ params }: PageProps) {
   try { room = await getOwnedRoom(session.uid, id); } catch (error) { if (error instanceof ApiError) notFound(); throw error; }
   if (room.status === "baking") redirect(`/rooms/${room.id}/bake`);
   if (room.status !== "ready" || !room.receiverId) redirect(`/rooms/${room.id}/studio`);
-  const [user, requestHeaders] = await Promise.all([getOwnerShellUser(session), headers()]);
+  const [user, requestHeaders, manifest] = await Promise.all([getOwnerShellUser(session), headers(), getPublishedReceiver(room.receiverId)]);
   if (!user) redirect(`/onboarding?next=${encodeURIComponent(`/rooms/${id}/finish`)}`);
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
   const path = `/r/${room.receiverId}`;
   const receiverUrl = host ? `${protocol}://${host}${path}` : path;
 
-  return <AppShell user={user}><div className="room-page room-workspace receiver-finish-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Selesai</span></div><RoomProgress status={room.status} /><ReceiverFinishCard receiverId={room.receiverId} receiverUrl={receiverUrl} /></div></AppShell>;
+  return <AppShell user={user}><div className="room-page room-workspace receiver-finish-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Selesai</span></div><RoomProgress status={room.status} /><ReceiverFinishCard receiverId={room.receiverId} receiverUrl={receiverUrl} revision={manifest.revision} roomId={room.id} /></div></AppShell>;
 }

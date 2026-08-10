@@ -21,9 +21,9 @@ export default async function BakePage({ params }: PageProps) {
   let room: Room;
   try { room = await getOwnedRoom(session.uid, id); } catch (error) { if (error instanceof ApiError) notFound(); throw error; }
   if (room.status === "ready") redirect(`/rooms/${room.id}/finish`);
-  if (room.status !== "baking") redirect(`/rooms/${room.id}/studio`);
+  if (room.status !== "baking" && room.status !== "configuring") redirect(`/rooms/${room.id}/studio`);
   const user = await getOwnerShellUser(session);
   if (!user) redirect(`/onboarding?next=${encodeURIComponent(`/rooms/${id}/bake`)}`);
 
-  return <AppShell user={user}><div className="room-page room-workspace bake-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Bake</span></div><RoomProgress status={room.status} /><BakeProgressShell roomId={room.id} /></div></AppShell>;
+  return <AppShell user={user}><div className="room-page room-workspace bake-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Bake</span></div><RoomProgress status="baking" /><BakeProgressShell roomId={room.id} /></div></AppShell>;
 }

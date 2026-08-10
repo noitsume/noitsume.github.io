@@ -680,8 +680,9 @@ export function SettingsStudio({
           {currentDirection ? <DirectionPreview direction={currentDirection} mediaById={mediaById} previewUrlByMediaId={previewUrlByMediaId} recipientName={recipientName} /> : null}
 
           <Surface className={`studio-bake-gate ${currentDirection ? "is-ready" : ""}`} tone="quiet">
-            <div><p className="ui-eyebrow">NEXT · BAKE</p><h2>{currentDirection ? "Direction final — siap masuk Bake" : "Pilih satu Direction untuk membuka Bake"}</h2><p>Patch 7 berhenti di validated ExperienceDNA. Patch 8 akan melakukan preflight → building progress → publish Receiver snapshot → token/link stabil, lalu progress berpindah ke Selesai.</p></div>
+            <div><p className="ui-eyebrow">NEXT · BAKE</p><h2>{currentDirection ? "Direction final — siap dibangun" : "Pilih satu Direction untuk membuka Bake"}</h2><p>Bake menjalankan preflight deterministic, membuat snapshot Receiver, lalu mempublish token stabil. Gemini tidak dipanggil lagi pada tahap ini.</p></div>
             <div className="studio-bake-gate__checks"><span className={selectedMedia.length > 0 ? "is-done" : ""}>✓ Media</span><span className={studio.backgroundMusic ? "is-done" : ""}>✓ Music</span><span className={currentDirection ? "is-done" : ""}>{currentDirection ? "✓" : "·"} ExperienceDNA</span></div>
+            <button className="ui-button ui-button--primary studio-bake-gate__button" disabled={!currentDirection || busy !== null} onClick={() => router.push(`/rooms/${encodeURIComponent(roomId)}/bake`)} type="button">Mulai Bake</button>
           </Surface>
         </div>
       ) : null}

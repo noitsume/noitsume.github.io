@@ -179,8 +179,14 @@ export async function startOwnedStudio(ownerUid: string, roomId: string) {
   if (room.status === "baking") {
     throw new ApiError("ROOM_BAKING", "Room sedang dibake dan Settings Studio dikunci sementara.", 409);
   }
-  if (room.status === "ready") return room;
   if (room.status === "configuring") return room;
+  if (room.status === "ready") {
+    // Re-open Studio without touching the published Receiver snapshot.
+    // The existing /r token remains live until the next successful Bake atomically replaces it.
+    const updatedAt = new Date().toISOString();
+    await backendRepositories.rooms.setStatus(room.id, "configuring", updatedAt);
+    return { ...room, status: "configuring" as const, updatedAt };
+  }
 
   const [submissions, media] = await Promise.all([
     backendRepositories.submissions.listByRoom(room.id),

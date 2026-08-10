@@ -1,0 +1,108 @@
+KENANGIN PATCH 8 — BAKE ENGINE + RECEIVER MANIFEST + PRIVATE ASSET DELIVERY + RECEIVER RUNTIME V1
+Baseline: kenangin_Patch 7 Finished v3.zip
+
+STATUS
+- Patch 8 source implementation: COMPLETE.
+- Next implementation boundary: Patch 9 Receiver Experience + Aura Runtime Completion.
+- Full npm check must still be run in the user's local project because the assistant package registry cannot install all existing transitive dependencies.
+
+IMPLEMENTED
+1. Bake workflow
+   - Settings Studio now exposes a real Mulai Bake gate after a final ExperienceDNA is selected.
+   - /rooms/{roomId}/bake accepts configuring/baking state and renders Bake progress.
+   - Client invokes authenticated + CSRF-protected synchronous Bake API.
+   - Progress UI: Preflight -> Build Manifest -> Publish Token.
+   - Failure returns Room to configuring; retry remains available.
+   - Success routes to /rooms/{roomId}/finish.
+
+2. Deterministic Bake validation
+   - owner/session + Room ownership.
+   - Room lifecycle gate.
+   - selected ExperienceDNA must exist and pass schema validation.
+   - Experience media set must exactly match owner-selected Studio media and contain no duplicates.
+   - Theme consistency Room/Studio/ExperienceDNA.
+   - Aura + Transition catalog compatibility revalidated.
+   - Background music revalidated.
+   - Room MP3 must remain Analyze=ready.
+   - Selected media B2 objects are HEAD-verified against size metadata.
+   - Room-uploaded music B2 object is HEAD-verified.
+   - Experience Wish IDs must still reference approved public wishes.
+   - Bake never calls Gemini.
+
+3. Versioned Receiver Manifest
+   - Replaced legacy ReceiverManifest placeholder.
+   - schemaVersion + receiverId + revision + bakedAt.
+   - public Room/recipient metadata.
+   - selected ExperienceDNA only.
+   - normalized media descriptors.
+   - safe wishes.
+   - Theme palette/typography + ornament placement.
+   - background music + beatmap reference/inline analysis.
+   - stable asset descriptors.
+   - no owner UID/email, moderation state, prompts, credentials, B2 object key, or presigned URL in the public manifest.
+
+4. Stable Receiver asset routing
+   - New server-side ReceiverRepository / FirestoreReceiverRepository.
+   - Public snapshot: receivers/{receiverId}.
+   - Server-only routing records: receivers/{receiverId}/assets/{assetId}.
+   - GET /api/receiver/{receiverId}/assets/{assetId} validates asset membership in the CURRENT manifest before resolving.
+   - Private asset -> short-lived B2 signed GET redirect.
+   - Curated public asset -> same-origin public path redirect.
+   - No endpoint accepts arbitrary B2 object key from the client.
+
+5. Atomic publish + stable token
+   - Firestore transaction publishes Receiver snapshot, Receiver asset routing records, and Room ready state together.
+   - First Bake creates receiverId and revision 1.
+   - Re-Bake keeps receiverId and increments revision.
+   - firstBakedAt is preserved; lastBakedAt updates.
+   - stale asset routing records may remain physically until lifecycle cleanup, but resolver rejects anything not referenced by the current manifest.
+
+6. Re-edit / re-Bake workflow
+   - Ready Room can be reopened into configuring.
+   - Existing published Receiver remains live while owner edits draft Studio state.
+   - Finish page exposes Atur lagi.
+   - Next successful Bake atomically replaces the live snapshot under the same token.
+
+7. Receiver Runtime v1 (/r/{receiverId})
+   - Implements the supplied blueprint as real runtime, not placeholder HTML.
+   - full viewport vertical scroll-snap.
+   - centered active section grows/focuses while neighbours shrink/fade (watermill/coverflow feel).
+   - Hero congratulations copy.
+   - automatically moving background memory strip.
+   - each video remains its own section.
+   - selected photos render inside one auto-crossfading photo-slide section.
+   - wishes pop/grow on focus + final wish cloud.
+   - Theme background and ornament assets from manifest.
+   - basic Aura and Transition treatment from catalog IDs.
+   - reduced-motion support.
+
+8. Media/audio execution
+   - video foreground volume executes Studio hard constraint.
+   - trimIn/trimOut execute at runtime.
+   - loop executes inside trim range.
+   - cover/contain executes.
+   - one global background audio element survives section changes.
+   - music-full restores normal gain.
+   - auto-duck ramps to ducked gain with configured attack.
+   - returning to photo/silent section ramps up using release.
+   - no pause/seek/restart of background music for section changes.
+   - autoplay-blocked browsers show an explicit music activation control.
+
+LEGACY CLEANUP
+- BakeJob render-queue contract removed as a concept; job.ts now only defines UI progress stage vocabulary.
+- ReceiverManifest legacy mediaInstances/songUrl/signed-url-shaped model replaced by stable versioned publish contract.
+
+PATCH 9 REMAINING
+- central ScrollFocusController instead of the v1 minimal observer coordination.
+- complete Aura renderer behavior across every catalog ID.
+- complete Transition renderer choreography.
+- beat reaction / beatmap timing.
+- ambient memory layer driven by ExperienceDNA.
+- smarter preload/playback coordination and later occlusion integration.
+- deeper failure-safe runtime polish + device QA.
+
+ASSISTANT VERIFICATION
+- 202 TS/TSX files isolated-transpiled successfully with global TypeScript parser.
+- Local @/* import resolution audit: PASS.
+- Source/manifest security audit: public Receiver schema contains no storageObjectKey or presigned URL field.
+- Full npm install/check unavailable in assistant environment because internal npm registry returns 404 for existing transitive dependencies (including zod-validation-error / zod-to-json-schema).

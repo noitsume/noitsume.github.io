@@ -4,3 +4,4 @@ export * from "./firestore-room-repository";
 export * from "./firestore-room-music-repository";
 export * from "./firestore-submission-repository";
 export * from "./firestore-user-repository";
+export * from "./firestore-receiver-repository";

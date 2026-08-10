@@ -6,3 +6,4 @@ export * from "./room-music-repository";
 export * from "./submission-repository";
 export * from "./theme-repository";
 export * from "./user-repository";
+export * from "./receiver-repository";

@@ -391,11 +391,11 @@ export function RoomWorkspaceLive({
     if (studioStarting) return;
     setStudioError(null);
 
-    if (roomStatus === "configuring" || roomStatus === "ready") {
+    if (roomStatus === "configuring") {
       router.push(`/rooms/${encodeURIComponent(roomId)}/studio`);
       return;
     }
-    if (roomStatus !== "closed") return;
+    if (roomStatus !== "closed" && roomStatus !== "ready") return;
 
     setStudioStarting(true);
     try {
