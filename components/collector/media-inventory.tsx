@@ -82,7 +82,6 @@ export function MediaInventoryDialog({
   const [analyzingMediaId, setAnalyzingMediaId] = useState<string | null>(null);
 
   const ownerCount = media.filter((item) => item.source === "owner").length;
-  const contributorCount = media.length - ownerCount;
   const intelligenceReadyCount = media.filter((item) => item.analysisStatus === "ready").length;
   const intelligenceFallbackCount = media.filter((item) => item.analysisStatus === "fallback" || item.analysisStatus === "not_started").length;
   const busy = phase !== "idle" || Boolean(analyzingMediaId);

@@ -173,11 +173,6 @@ export function RoomWorkspaceLive({
   }, [previewUrlByMediaId]);
 
   useEffect(() => {
-    setRoomStatus(initialRoomStatus);
-    roomStatusRef.current = initialRoomStatus;
-  }, [initialRoomStatus]);
-
-  useEffect(() => {
     let disposed = false;
     let unsubscribeSubmissions: (() => void) | null = null;
     let unsubscribeMedia: (() => void) | null = null;

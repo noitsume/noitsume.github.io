@@ -279,14 +279,14 @@ async function verifyUploadedCandidates(input: {
       throw new ApiError("UPLOAD_TYPE_MISMATCH", `Tipe ${candidate.originalFileName} tidak sesuai.`, 409);
     }
 
-    verified.push({
+    verified.push(stagedSubmissionMediaSchema.parse({
       id: candidate.id,
       type: candidate.type,
       storageObjectKey: candidate.objectKey,
       originalFileName: candidate.originalFileName,
       contentType: candidate.contentType,
       sizeBytes: candidate.sizeBytes,
-    });
+    }));
   }
 
   return verified;
