@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ensureFirestoreReadSession, getCsrfToken } from "@/lib/auth/client";
 import { mediaSchema, submissionSchema, type Media, type RoomStatus, type Submission } from "@/lib/data/contracts";
 import { getFirebaseClientFirestore } from "@/lib/firebase/client";
-import { Badge, CalendarIcon, InboxIcon, PhotoIcon, Surface } from "@/components/ui";
+import { Badge, InboxIcon, PhotoIcon, Surface } from "@/components/ui";
 import { CollectorSharePanel } from "./collector-share-panel";
 import { MediaInventoryDialog } from "./media-inventory";
 import { SubmissionManager } from "./submission-manager";
@@ -447,103 +447,123 @@ export function RoomWorkspaceLive({
 
   return (
     <>
-      <div className="room-workspace-layout">
-        <main className="room-workspace-main">
-          <Surface className="room-snapshot" tone="quiet">
-            <div className="room-snapshot__heading">
-              <div>
-                <p className="ui-eyebrow">ROOM SNAPSHOT</p>
-                <h2>Konteks acara</h2>
+      <div className="room-flow">
+        <Surface className={`room-flow-step room-flow-step--collect ${isCollecting ? "is-active" : "is-done"}`} tone="quiet">
+          <div className="room-flow-step__header">
+            <div className="room-flow-step__marker" aria-hidden="true">
+              <span>{isCollecting ? "1" : "✓"}</span>
+            </div>
+            <div className="room-flow-step__copy">
+              <p className="ui-eyebrow">TAHAP 01 · KUMPULKAN</p>
+              <h2>Kumpulkan momen di satu tempat</h2>
+              <p>Bagikan Collector, pantau kiriman yang masuk, lalu tutup pengumpulan saat bahan sudah cukup.</p>
+            </div>
+            <Badge className={isCollecting ? "ui-badge--success" : "ui-badge--neutral"}>
+              {isCollecting ? "Collector aktif" : "Pengumpulan ditutup"}
+            </Badge>
+          </div>
+
+          <div className="room-flow-collection">
+            <div className="room-flow-context">
+              <div className="room-flow-context__heading">
+                <div>
+                  <p className="ui-eyebrow">ROOM SNAPSHOT</p>
+                  <h3>Konteks acara</h3>
+                </div>
+                <span>{roomId}</span>
               </div>
-              <span className="room-snapshot__room-id">{roomId}</span>
-            </div>
-
-            <div className="room-snapshot__meta">
-              <div className="room-snapshot__meta-item"><span>Dirayakan untuk</span><strong>{recipientName}</strong></div>
-              <div className="room-snapshot__meta-item"><span>Acara</span><strong>{occasionName}</strong></div>
-              <div className="room-snapshot__meta-item"><span>Tema</span><strong className="room-snapshot__theme"><i aria-hidden="true" />{themeName}</strong></div>
-              <div className="room-snapshot__meta-item"><span>Batas pengumpulan</span><strong>{formatDate(collectionDeadline)}</strong><small>{deadlineHint(collectionDeadline, isCollecting)}</small></div>
-            </div>
-          </Surface>
-
-          <Surface className="room-workspace-section room-workspace-review" tone="quiet">
-            <div className="room-workspace-section__heading">
-              <div>
-                <p className="ui-eyebrow">SUBMISSION REVIEW</p>
-                <h2>Kurasi kiriman contributor</h2>
-                <p>Approve memindahkan media dari staging submission ke inventori permanen. Exclude menghapus file staging dari B2.</p>
-                <span className={`workspace-sync-state ${syncError ? "is-error" : ""}`}>
-                  <i aria-hidden="true" />{syncError ?? (syncActive ? "Auto-sync aktif · perubahan digabung sekitar 2,5 detik" : "Menyiapkan auto-sync...")}
-                </span>
+              <div className="room-flow-context__grid">
+                <div><span>Dirayakan untuk</span><strong>{recipientName}</strong></div>
+                <div><span>Acara</span><strong>{occasionName}</strong></div>
+                <div><span>Tema</span><strong className="room-snapshot__theme"><i aria-hidden="true" />{themeName}</strong></div>
+                <div><span>Batas pengumpulan</span><strong>{formatDate(collectionDeadline)}</strong><small>{deadlineHint(collectionDeadline, isCollecting)}</small></div>
               </div>
-              <Badge className={pendingSubmissions.length > 0 ? "ui-badge--amber" : "ui-badge--success"}>{pendingSubmissions.length} pending</Badge>
-            </div>
-            <SubmissionManager
-              roomId={roomId}
-              submissions={pendingSubmissions}
-              media={media}
-              previewUrlByMediaId={previewUrlByMediaId}
-              onModerated={applyModeration}
-            />
-          </Surface>
-        </main>
-
-        <aside className="room-workspace-side">
-          <Surface className={`room-collector-card ${isCollecting ? "room-collector-card--open" : ""}`} tone="elevated">
-            <div className="room-collector-card__heading">
-              <div><p className="ui-eyebrow">COLLECTOR</p><h2>Panel pengumpul</h2></div>
-              <span className={`room-collector-card__signal ${isCollecting ? "is-open" : "is-closed"}`}><i aria-hidden="true" />{isCollecting ? "Aktif" : "Ditutup"}</span>
             </div>
 
-            <div className="room-collector-card__count"><strong>{contributorSubmissions.length}</strong><span>kiriman masuk</span></div>
-
-            <CollectorSharePanel
-              roomId={roomId}
-              collectorId={collectorId}
-              collectorUrl={collectorUrl}
-              isOpen={isCollecting}
-              contributorNames={contributorNames}
-              inventoryCount={inventoryMedia.length}
-              onOpenInventory={() => setInventoryOpen(true)}
-              onCollectionClosed={() => setRoomStatus("closed")}
-            />
-          </Surface>
-
-          <Surface className="room-review-pulse" tone="quiet">
-            <div className="room-review-pulse__heading">
-              <div><p className="ui-eyebrow">REVIEW PULSE</p><h3>{reviewProgress}% selesai</h3></div>
-              <span>{reviewedCount}/{contributorSubmissions.length}</span>
+            <div className={`room-flow-collector ${isCollecting ? "is-open" : "is-closed"}`}>
+              <div className="room-collector-card__heading">
+                <div><p className="ui-eyebrow">COLLECTOR</p><h3>Bagikan link pengumpulan</h3></div>
+                <span className={`room-collector-card__signal ${isCollecting ? "is-open" : "is-closed"}`}><i aria-hidden="true" />{isCollecting ? "Aktif" : "Ditutup"}</span>
+              </div>
+              <div className="room-collector-card__count"><strong>{contributorSubmissions.length}</strong><span>kiriman masuk</span></div>
+              <CollectorSharePanel
+                roomId={roomId}
+                collectorId={collectorId}
+                collectorUrl={collectorUrl}
+                isOpen={isCollecting}
+                contributorNames={contributorNames}
+                inventoryCount={inventoryMedia.length}
+                onOpenInventory={() => setInventoryOpen(true)}
+                onCollectionClosed={() => setRoomStatus("closed")}
+              />
             </div>
-            <div className="room-review-pulse__bar" aria-label={`${reviewProgress}% kiriman sudah direview`}><span style={{ width: `${reviewProgress}%` }} /></div>
-            <div className="room-review-pulse__stats">
-              <div><span className="room-review-pulse__icon"><InboxIcon size={15} /></span><small>Kiriman</small><strong>{contributorSubmissions.length}</strong></div>
-              <div><span className="room-review-pulse__icon"><PhotoIcon size={15} /></span><small>Inventori</small><strong>{inventoryMedia.length}</strong></div>
-              <div><span className="room-review-pulse__icon room-review-pulse__icon--success">✓</span><small>Approved</small><strong>{approvedCount}</strong></div>
-              <div><span className="room-review-pulse__icon room-review-pulse__icon--amber">•</span><small>Pending</small><strong>{pendingSubmissions.length}</strong></div>
-            </div>
-          </Surface>
+          </div>
+        </Surface>
 
-          <Surface className="room-studio-gate" tone="quiet">
-            <div className="room-studio-gate__heading">
-              <div><p className="ui-eyebrow">NEXT GATE</p><h3>Settings Studio</h3></div>
-              <span>{studioGateReady ? "Ready" : "Locked"}</span>
+        <Surface className={`room-flow-step room-flow-step--review ${!isCollecting && pendingSubmissions.length === 0 ? "is-done" : !isCollecting ? "is-active" : ""}`} tone="quiet">
+          <div className="room-flow-step__header room-flow-step__header--review">
+            <div className="room-flow-step__marker" aria-hidden="true">
+              <span>{!isCollecting && pendingSubmissions.length === 0 ? "✓" : "2"}</span>
             </div>
-            <div className="room-studio-gate__checks">
-              <span className={!isCollecting ? "is-done" : ""}><i>{!isCollecting ? "✓" : "1"}</i>Collector ditutup</span>
-              <span className={pendingSubmissions.length === 0 ? "is-done" : ""}><i>{pendingSubmissions.length === 0 ? "✓" : "2"}</i>Review submission selesai</span>
-              <span className={inventoryMedia.length > 0 ? "is-done" : ""}><i>{inventoryMedia.length > 0 ? "✓" : "3"}</i>Minimal 1 media tersedia</span>
+            <div className="room-flow-step__copy">
+              <p className="ui-eyebrow">TAHAP 02 · REVIEW</p>
+              <h2>Pilih kiriman yang layak masuk</h2>
+              <p>Approve memindahkan media ke inventori permanen. Exclude membuang kiriman yang tidak dipakai.</p>
+              <span className={`workspace-sync-state ${syncError ? "is-error" : ""}`}>
+                <i aria-hidden="true" />{syncError ?? (syncActive ? "Auto-sync aktif · perubahan digabung sekitar 2,5 detik" : "Menyiapkan auto-sync...")}
+              </span>
             </div>
-            <button className="ui-button ui-button--primary room-studio-gate__button" disabled={!studioButtonEnabled || studioStarting} onClick={enterStudio} type="button">
-              {studioStarting ? "Membuka Studio..." : roomStatus === "configuring" || roomStatus === "ready" ? "Buka Settings Studio" : "Mulai Mengatur"}
-            </button>
-            {studioError ? <p className="form-error" role="alert">{studioError}</p> : null}
-          </Surface>
+            <div className="room-flow-review-summary" aria-label={`${reviewProgress}% kiriman selesai direview`}>
+              <div className="room-flow-review-summary__progress"><strong>{reviewProgress}%</strong><span>review selesai</span></div>
+              <div className="room-flow-review-summary__stats">
+                <span><InboxIcon size={14} /><b>{contributorSubmissions.length}</b><small>Kiriman</small></span>
+                <span><PhotoIcon size={14} /><b>{inventoryMedia.length}</b><small>Inventori</small></span>
+                <span className="is-approved"><b>{approvedCount}</b><small>Approved</small></span>
+                <span className="is-pending"><b>{pendingSubmissions.length}</b><small>Pending</small></span>
+              </div>
+            </div>
+          </div>
 
-          <Surface className="room-deadline-card" tone="quiet">
-            <span className="room-deadline-card__icon"><CalendarIcon size={17} /></span>
-            <div><small>Collection deadline</small><strong>{formatDate(collectionDeadline)}</strong><span>{deadlineHint(collectionDeadline, isCollecting)}</span></div>
-          </Surface>
-        </aside>
+          <div className="room-flow-review-bar" aria-hidden="true"><span style={{ width: `${reviewProgress}%` }} /></div>
+          <SubmissionManager
+            roomId={roomId}
+            submissions={pendingSubmissions}
+            media={media}
+            previewUrlByMediaId={previewUrlByMediaId}
+            onModerated={applyModeration}
+          />
+        </Surface>
+
+        <Surface className={`room-flow-step room-flow-step--next ${studioButtonEnabled ? "is-ready" : ""}`} tone="elevated">
+          <div className="room-flow-step__header">
+            <div className="room-flow-step__marker" aria-hidden="true"><span>3</span></div>
+            <div className="room-flow-step__copy">
+              <p className="ui-eyebrow">TAHAP 03 · LANJUTKAN</p>
+              <h2>Masuk ke Settings Studio</h2>
+              <p>Begitu tiga syarat di bawah selesai, Room siap disusun menjadi experience.</p>
+            </div>
+            <span className={`room-flow-next__state ${studioButtonEnabled ? "is-ready" : ""}`}>{studioButtonEnabled ? "Siap lanjut" : "Belum siap"}</span>
+          </div>
+
+          <div className="room-flow-next">
+            <div className="room-flow-next__checks">
+              <span className={!isCollecting ? "is-done" : ""}><i>{!isCollecting ? "✓" : "1"}</i><span><strong>Collector ditutup</strong><small>{!isCollecting ? "Selesai" : "Tutup pengumpulan di tahap pertama"}</small></span></span>
+              <span className={pendingSubmissions.length === 0 ? "is-done" : ""}><i>{pendingSubmissions.length === 0 ? "✓" : "2"}</i><span><strong>Review selesai</strong><small>{pendingSubmissions.length === 0 ? "Tidak ada pending" : `${pendingSubmissions.length} kiriman masih menunggu keputusan`}</small></span></span>
+              <span className={inventoryMedia.length > 0 ? "is-done" : ""}><i>{inventoryMedia.length > 0 ? "✓" : "3"}</i><span><strong>Media tersedia</strong><small>{inventoryMedia.length > 0 ? `${inventoryMedia.length} media siap dipakai` : "Approve minimal satu media"}</small></span></span>
+            </div>
+
+            <div className="room-flow-next__action">
+              <div>
+                <span>Langkah berikutnya</span>
+                <strong>Atur media, story anchor, musik, dan direction.</strong>
+              </div>
+              <button className="ui-button ui-button--primary room-flow-next__button" disabled={!studioButtonEnabled || studioStarting} onClick={enterStudio} type="button">
+                {studioStarting ? "Membuka Studio..." : roomStatus === "configuring" || roomStatus === "ready" ? "Buka Settings Studio" : "Mulai Mengatur"}
+              </button>
+            </div>
+            {studioError ? <p className="form-error room-flow-next__error" role="alert">{studioError}</p> : null}
+          </div>
+        </Surface>
       </div>
 
       <MediaInventoryDialog

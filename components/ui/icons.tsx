@@ -201,6 +201,15 @@ export function VideoIcon(props: IconProps) {
   );
 }
 
+export function EditIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4.5 19.5h4l10-10a2.12 2.12 0 0 0-3-3l-10 10v4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+      <path d="m13.9 8.1 3 3" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+    </IconBase>
+  );
+}
+
 export function TrashIcon(props: IconProps) {
   return (
     <IconBase {...props}>

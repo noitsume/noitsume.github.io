@@ -123,7 +123,7 @@ export function CollectorSharePanel({
         <div className="collector-share-panel__after-close">
           <div className="collector-share-panel__closed"><LockIcon size={14} /> Collector tidak menerima kiriman baru.</div>
           <Button variant="primary" onClick={onOpenInventory}>
-            <GridIcon size={16} /> Lanjut ke Analisis Media
+            <GridIcon size={16} /> Buka Inventori Media
           </Button>
           <small>Periksa media approved, retry Quick Look yang fallback, atau upload media owner sebelum masuk Settings Studio.</small>
         </div>

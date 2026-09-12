@@ -6,13 +6,23 @@ import { ThemeToggle } from "@/components/theme";
 import { DateTimeWidget } from "./date-time-widget";
 import { ProfileMenu, type ShellUser } from "./profile-menu";
 
-export function TopNavbar({ user, onOpenMenu }: { user: ShellUser; onOpenMenu: () => void }) {
+export function TopNavbar({
+  user,
+  onOpenMenu,
+  showMenuButton = true,
+}: {
+  user: ShellUser;
+  onOpenMenu: () => void;
+  showMenuButton?: boolean;
+}) {
   return (
     <header className="top-navbar">
       <div className="top-navbar__brand-group">
-        <IconButton aria-label="Buka navigasi" className="top-navbar__menu-button" onClick={onOpenMenu}>
-          <MenuIcon size={19} />
-        </IconButton>
+        {showMenuButton ? (
+          <IconButton aria-label="Buka navigasi" className="top-navbar__menu-button" onClick={onOpenMenu}>
+            <MenuIcon size={19} />
+          </IconButton>
+        ) : null}
         <a className="brand-lockup" href="/dashboard" aria-label={`${brand.name} Dashboard`}>
           <span className="brand-mark" aria-hidden="true"><span>{brand.shortName}</span></span>
           <strong>{brand.name}</strong>

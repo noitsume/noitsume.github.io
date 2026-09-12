@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthShell
       eyebrow="KENANGIN.ID · OWNER"
-      title="Kenangan besar dimulai dari satu Room."
+      title="Rasakan Kembali Kenanganmu"
       description="Masuk untuk mengelola pengumpulan momen, menyusun pengalaman, lalu menyiapkan kejutan yang terasa personal."
       footer={<p>Belum punya akun? <Link href="/register">Daftar sebagai owner</Link></p>}
     >

@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { CreateRoomLauncher, RoomSortSelect } from "@/components/rooms";
 import {
   Badge,
+  EditIcon,
   MoreIcon,
   PinIcon,
+  TrashIcon,
   SectionHeader,
   Surface,
 } from "@/components/ui";
@@ -47,11 +49,13 @@ function DashboardRoomCard({
   creatorName,
   busy,
   onTogglePin,
+  onDeleteRoom,
 }: {
   room: Room;
   creatorName: string;
   busy: boolean;
   onTogglePin: (room: Room) => void;
+  onDeleteRoom: (room: Room) => void;
 }) {
   const derived = getDashboardRoomStatus(room);
   const expiryLabel = room.expiresAt
@@ -101,13 +105,21 @@ function DashboardRoomCard({
           <Link className="ui-button ui-button--secondary dashboard-room-card__open" href={`/rooms/${room.id}`}>
             Lihat Room
           </Link>
-          <Link
-            className="dashboard-room-card__more"
-            href={`/rooms/${room.id}/edit`}
-            aria-label={`Edit ${room.title}`}
-          >
-            <MoreIcon size={17} />
-          </Link>
+          <details className="dashboard-room-menu" data-busy={busy ? "true" : "false"}>
+            <summary className="dashboard-room-card__more" aria-label={`Buka menu ${room.title}`}>
+              <MoreIcon size={17} />
+            </summary>
+            <div className="dashboard-room-menu__popover">
+              <Link className="dashboard-room-menu__item" href={`/rooms/${room.id}/edit`}>
+                <span className="dashboard-room-menu__glyph" aria-hidden="true"><EditIcon size={15} /></span>
+                <span><strong>Edit Room</strong><small>Ubah detail dan pengaturan dasar</small></span>
+              </Link>
+              <button className="dashboard-room-menu__item dashboard-room-menu__item--danger" disabled={busy} onClick={() => onDeleteRoom(room)} type="button">
+                <span className="dashboard-room-menu__glyph" aria-hidden="true"><TrashIcon size={15} /></span>
+                <span><strong>{busy ? "Memproses..." : "Hapus Room"}</strong><small>Hapus Room yang tidak dipakai</small></span>
+              </button>
+            </div>
+          </details>
         </div>
       </div>
     </Surface>
@@ -205,6 +217,43 @@ function DashboardRoomSectionsState({
     }
   }
 
+
+  async function deleteRoom(room: Room) {
+    if (busyRoomIds.has(room.id)) return;
+    if (!window.confirm(`Hapus Room "${room.title}"? Tindakan ini belum dapat dibatalkan.`)) return;
+
+    setBusyRoomIds((current) => {
+      const next = new Set(current);
+      next.add(room.id);
+      return next;
+    });
+
+    try {
+      const csrfToken = await getCsrfToken();
+      const response = await fetch(`/api/rooms/${room.id}`, {
+        method: "DELETE",
+        headers: { "x-csrf-token": csrfToken },
+        credentials: "same-origin",
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error?.message ?? "Room gagal dihapus.");
+      }
+
+      setRooms((current) => current.filter((item) => item.id !== room.id));
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Room gagal dihapus.");
+    } finally {
+      setBusyRoomIds((current) => {
+        const next = new Set(current);
+        next.delete(room.id);
+        return next;
+      });
+    }
+  }
   return (
     <>
       <section className="dashboard-section" aria-labelledby="pinned-heading">
@@ -224,6 +273,7 @@ function DashboardRoomSectionsState({
                 creatorName={creatorName}
                 busy={busyRoomIds.has(room.id)}
                 onTogglePin={togglePinned}
+                onDeleteRoom={deleteRoom}
               />
             ))}
           </div>
@@ -250,6 +300,7 @@ function DashboardRoomSectionsState({
               creatorName={creatorName}
               busy={busyRoomIds.has(room.id)}
               onTogglePin={togglePinned}
+              onDeleteRoom={deleteRoom}
             />
           ))}
         </div>

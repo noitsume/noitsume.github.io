@@ -13561,3 +13561,687 @@ html[data-theme="light"] .logout-transition__vignette {
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* ============================================================
+ * Room workspace UX refresh — focused full-width flow.
+ * The Room overview intentionally removes dashboard navigation rails and
+ * presents the work in one top-to-bottom sequence: Collect → Review → Studio.
+ * ============================================================ */
+.app-shell--focus .app-shell__body {
+  width: 100%;
+  max-width: none;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: clamp(18px, 2vw, 30px) clamp(16px, 2.5vw, 46px) 42px;
+}
+
+.app-shell--focus .app-shell__main {
+  width: min(1660px, 100%);
+  margin-inline: auto;
+}
+
+.app-shell--focus .room-workspace {
+  gap: 20px;
+}
+
+.app-shell--focus .room-workspace-header {
+  padding: 2px 4px 6px;
+}
+
+.app-shell--focus .room-workspace-header__copy {
+  max-width: 960px;
+}
+
+.room-flow {
+  position: relative;
+  display: grid;
+  gap: 16px;
+}
+
+.room-flow::before {
+  position: absolute;
+  z-index: 0;
+  top: 38px;
+  bottom: 38px;
+  left: 31px;
+  width: 1px;
+  content: "";
+  background: linear-gradient(180deg, rgb(var(--coral-rgb) / 0.30), rgb(var(--amber-rgb) / 0.18) 58%, transparent);
+  pointer-events: none;
+}
+
+.room-flow-step {
+  position: relative;
+  z-index: 1;
+  padding: clamp(20px, 2vw, 30px);
+  border-radius: 22px;
+  overflow: visible;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.room-flow-step.is-active {
+  border-color: rgb(var(--coral-rgb) / 0.26);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.045), 0 18px 44px rgb(0 0 0 / 0.08);
+}
+
+.room-flow-step.is-done {
+  border-color: rgb(90 193 139 / 0.18);
+}
+
+.room-flow-step--next.is-ready {
+  border-color: rgb(var(--amber-rgb) / 0.30);
+  background:
+    radial-gradient(circle at 88% 16%, rgb(var(--amber-rgb) / 0.075), transparent 30%),
+    rgb(var(--dashboard-panel-glass-rgb) / 0.42);
+}
+
+.room-flow-step__header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.room-flow-step__marker {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgb(var(--page-bg-rgb) / 0.26);
+  color: var(--text-muted);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.04);
+}
+
+.room-flow-step__marker span {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 780;
+}
+
+.room-flow-step.is-active .room-flow-step__marker {
+  border-color: rgb(var(--coral-rgb) / 0.36);
+  background: rgb(var(--coral-rgb) / 0.09);
+  color: var(--coral);
+  box-shadow: 0 0 0 5px rgb(var(--coral-rgb) / 0.035);
+}
+
+.room-flow-step.is-done .room-flow-step__marker {
+  border-color: rgb(90 193 139 / 0.28);
+  background: rgb(90 193 139 / 0.08);
+  color: #62c995;
+}
+
+.room-flow-step--next.is-ready .room-flow-step__marker {
+  border-color: rgb(var(--amber-rgb) / 0.38);
+  background: rgb(var(--amber-rgb) / 0.09);
+  color: var(--amber);
+}
+
+.room-flow-step__copy {
+  min-width: 0;
+}
+
+.room-flow-step__copy h2 {
+  margin: 5px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2vw, 29px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.room-flow-step__copy > p:not(.ui-eyebrow) {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.room-flow-collection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(390px, 0.72fr);
+  gap: 14px;
+  margin-left: 64px;
+}
+
+.room-flow-context,
+.room-flow-collector {
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid var(--hairline);
+  border-radius: 17px;
+  background: rgb(var(--page-bg-rgb) / 0.12);
+}
+
+.room-flow-collector.is-open {
+  border-color: rgb(var(--coral-rgb) / 0.22);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(var(--coral-rgb) / 0.055), transparent 36%),
+    rgb(var(--page-bg-rgb) / 0.12);
+}
+
+.room-flow-context__heading,
+.room-collector-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.room-flow-context__heading {
+  margin-bottom: 15px;
+}
+
+.room-flow-context__heading h3,
+.room-flow-collector .room-collector-card__heading h3 {
+  margin: 5px 0 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: -0.025em;
+}
+
+.room-flow-context__heading > span {
+  max-width: 44%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-flow-context__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 13px;
+}
+
+.room-flow-context__grid > div {
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 15px;
+  border-right: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.room-flow-context__grid > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.room-flow-context__grid > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.room-flow-context__grid span,
+.room-flow-context__grid small {
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.room-flow-context__grid > div > span:first-child {
+  font-weight: 720;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.room-flow-context__grid strong {
+  font-size: 11px;
+}
+
+.room-flow-context__grid small {
+  color: var(--amber);
+}
+
+.room-flow-collector .collector-share-panel {
+  margin-top: 14px;
+}
+
+.room-flow-step__header--review {
+  grid-template-columns: 48px minmax(0, 1fr) minmax(310px, 0.62fr);
+}
+
+.room-flow-review-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+.room-flow-review-summary__progress {
+  min-width: 78px;
+  display: grid;
+  gap: 2px;
+  padding-right: 13px;
+  border-right: 1px solid var(--hairline);
+}
+
+.room-flow-review-summary__progress strong {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.room-flow-review-summary__progress span {
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.room-flow-review-summary__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.room-flow-review-summary__stats > span {
+  min-width: 0;
+  min-height: 50px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  color: var(--text-muted);
+  background: rgb(var(--page-bg-rgb) / 0.1);
+}
+
+.room-flow-review-summary__stats b {
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.room-flow-review-summary__stats small {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-flow-review-summary__stats .is-approved b {
+  color: #62c995;
+}
+
+.room-flow-review-summary__stats .is-pending b {
+  color: var(--amber);
+}
+
+.room-flow-review-bar {
+  height: 3px;
+  overflow: hidden;
+  margin: -7px 0 18px 64px;
+  border-radius: 999px;
+  background: rgb(var(--page-bg-rgb) / 0.28);
+}
+
+.room-flow-review-bar > span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--coral), var(--amber));
+  transition: width 220ms ease;
+}
+
+.room-flow-step--review .submission-manager {
+  margin-left: 64px;
+}
+
+.room-flow-next__state {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.room-flow-next__state.is-ready {
+  border-color: rgb(var(--amber-rgb) / 0.30);
+  background: rgb(var(--amber-rgb) / 0.08);
+  color: var(--amber);
+}
+
+.room-flow-next {
+  display: grid;
+  gap: 14px;
+  margin-left: 64px;
+}
+
+.room-flow-next__checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-flow-next__checks > span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: rgb(var(--page-bg-rgb) / 0.11);
+  color: var(--text-muted);
+}
+
+.room-flow-next__checks > span > i {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.room-flow-next__checks > span > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.room-flow-next__checks strong {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.room-flow-next__checks small {
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-flow-next__checks > span.is-done {
+  border-color: rgb(90 193 139 / 0.16);
+}
+
+.room-flow-next__checks > span.is-done > i {
+  border-color: rgb(90 193 139 / 0.24);
+  background: rgb(90 193 139 / 0.08);
+  color: #62c995;
+}
+
+.room-flow-next__checks > span.is-done strong {
+  color: var(--text-primary);
+}
+
+.room-flow-next__action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 15px 16px;
+  border: 1px solid rgb(var(--amber-rgb) / 0.16);
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgb(var(--coral-rgb) / 0.035), rgb(var(--amber-rgb) / 0.045));
+}
+
+.room-flow-next__action > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.room-flow-next__action span {
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.room-flow-next__action strong {
+  font-size: 11px;
+}
+
+.room-flow-next__button {
+  min-width: 190px;
+  justify-content: center;
+}
+
+.room-flow-next__error {
+  margin: 0;
+}
+
+/* Dashboard Room action menu. Left-clicking the three-dot control opens a
+   themed menu instead of navigating immediately to Edit. */
+.dashboard-room-menu {
+  position: relative;
+  flex: 0 0 36px;
+}
+
+.dashboard-room-menu > summary {
+  list-style: none;
+}
+
+.dashboard-room-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-room-menu[open] .dashboard-room-card__more {
+  border-color: rgb(var(--coral-rgb) / 0.28);
+  background: rgb(var(--coral-rgb) / 0.08);
+  color: var(--coral);
+  box-shadow: 0 7px 18px rgb(var(--coral-rgb) / 0.08);
+}
+
+.dashboard-room-menu__popover {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 238px;
+  display: grid;
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid rgb(var(--coral-rgb) / 0.16);
+  border-radius: 15px;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(var(--amber-rgb) / 0.07), transparent 42%),
+    rgb(var(--dashboard-panel-glass-rgb) / 0.96);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  backdrop-filter: blur(18px) saturate(1.08);
+  box-shadow: 0 18px 42px rgb(0 0 0 / 0.22), inset 0 1px rgb(255 255 255 / 0.05);
+}
+
+.dashboard-room-menu__item {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.dashboard-room-menu__item:hover,
+.dashboard-room-menu__item:focus-visible {
+  outline: none;
+  background: rgb(var(--coral-rgb) / 0.07);
+  color: var(--text-primary);
+}
+
+.dashboard-room-menu__item > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.dashboard-room-menu__item strong {
+  font-size: 10px;
+}
+
+.dashboard-room-menu__item small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-room-menu__glyph {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: rgb(var(--page-bg-rgb) / 0.14);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.dashboard-room-menu__item--danger {
+  color: var(--coral);
+}
+
+.dashboard-room-menu__item--danger:hover,
+.dashboard-room-menu__item--danger:focus-visible {
+  background: rgb(var(--coral-rgb) / 0.10);
+  color: var(--coral);
+}
+
+.dashboard-room-menu__item--danger .dashboard-room-menu__glyph {
+  border-color: rgb(var(--coral-rgb) / 0.18);
+  background: rgb(var(--coral-rgb) / 0.07);
+  color: var(--coral);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.dashboard-room-menu__item:disabled {
+  cursor: wait;
+  opacity: 0.52;
+}
+
+@media (max-width: 1120px) {
+  .room-flow-collection {
+    grid-template-columns: 1fr;
+  }
+
+  .room-flow-step__header--review {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .room-flow-review-summary {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell--focus .app-shell__body {
+    padding: 14px 9px 28px;
+  }
+
+  .room-flow::before {
+    display: none;
+  }
+
+  .room-flow-step {
+    padding: 17px;
+  }
+
+  .room-flow-step__header,
+  .room-flow-step__header--review {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .room-flow-step__marker {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .room-flow-step__header > .ui-badge,
+  .room-flow-next__state,
+  .room-flow-review-summary {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .room-flow-collection,
+  .room-flow-step--review .submission-manager,
+  .room-flow-review-bar,
+  .room-flow-next {
+    margin-left: 0;
+  }
+
+  .room-flow-context__grid,
+  .room-flow-next__checks {
+    grid-template-columns: 1fr;
+  }
+
+  .room-flow-context__grid > div,
+  .room-flow-context__grid > div:nth-child(2n),
+  .room-flow-context__grid > div:nth-last-child(-n + 2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .room-flow-context__grid > div:last-child {
+    border-bottom: 0;
+  }
+
+  .room-flow-review-summary {
+    width: 100%;
+  }
+
+  .room-flow-next__action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .room-flow-next__button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .room-flow-review-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .room-flow-review-summary__progress {
+    padding: 0 0 9px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .room-flow-review-summary__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-room-menu__popover {
+    width: min(238px, calc(100vw - 48px));
+  }
+}

@@ -11,10 +11,12 @@ export function AppShell({
   user,
   children,
   rightRail,
+  hideSidebar = false,
 }: {
   user: ShellUser;
   children: ReactNode;
   rightRail?: ReactNode;
+  hideSidebar?: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -39,18 +41,24 @@ export function AppShell({
     };
   }, [mobileOpen]);
 
+  const shellClasses = [
+    "app-shell",
+    rightRail ? "" : "app-shell--no-rail",
+    hideSidebar ? "app-shell--focus" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <div className={`app-shell ${rightRail ? "" : "app-shell--no-rail"}`.trim()}>
+    <div className={shellClasses}>
       <DeskBackground />
-      <TopNavbar user={user} onOpenMenu={() => setMobileOpen(true)} />
+      <TopNavbar user={user} onOpenMenu={() => setMobileOpen(true)} showMenuButton={!hideSidebar} />
 
       <div className="app-shell__body">
-        <div className="app-shell__left"><Sidebar /></div>
+        {!hideSidebar ? <div className="app-shell__left"><Sidebar /></div> : null}
         <main className="app-shell__main">{children}</main>
         {rightRail ? <aside className="app-shell__right">{rightRail}</aside> : null}
       </div>
 
-      <div
+      {!hideSidebar ? <div
         className={`mobile-nav ${mobileOpen ? "mobile-nav--open" : ""}`}
         aria-hidden={!mobileOpen}
       >
@@ -76,7 +84,7 @@ export function AppShell({
           </div>
           <Sidebar mobile onNavigate={() => setMobileOpen(false)} />
         </div>
-      </div>
+      </div> : null}
     </div>
   );
 }

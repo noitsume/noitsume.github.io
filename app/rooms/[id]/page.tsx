@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { RoomWorkspaceLive } from "@/components/collector";
 import { AppShell } from "@/components/shell";
-import { RoomActions, RoomOpenTracker, RoomProgress, roomProgressLabel } from "@/components/rooms";
-import { ArrowRightIcon, Badge, Surface } from "@/components/ui";
+import { RoomOpenTracker, RoomProgress, roomProgressLabel } from "@/components/rooms";
+import { ArrowRightIcon, Badge } from "@/components/ui";
 import type { Room } from "@/lib/data/contracts";
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
 import { getOwnerShellUser } from "@/lib/auth/owner-data";
@@ -62,7 +62,7 @@ export default async function RoomOverviewPage({ params }: PageProps) {
   const collectorUrl = host ? `${protocol}://${host}${collectorPath}` : collectorPath;
 
   return (
-    <AppShell user={user}>
+    <AppShell user={user} hideSidebar>
       <RoomOpenTracker roomId={room.id} />
       <div className="room-page room-workspace">
         <div className="room-page__breadcrumb">
@@ -86,10 +86,7 @@ export default async function RoomOverviewPage({ params }: PageProps) {
               Kenangan untuk <strong>{room.recipientName}</strong>. Kumpulkan momen, review yang masuk, lalu lanjutkan ke tahap penyusunan pengalaman.
             </p>
           </div>
-          <div className="room-workspace-header__actions">
-            <Link className="ui-button ui-button--primary" href={`/c/${room.collectorId}`} target="_blank">Buka Collector</Link>
-            <Link className="ui-button ui-button--ghost" href={`/rooms/${room.id}/edit`}>Edit Room</Link>
-          </div>
+
         </header>
 
         <RoomProgress status={room.status} />
@@ -106,14 +103,6 @@ export default async function RoomOverviewPage({ params }: PageProps) {
           initialWorkspace={workspace}
         />
 
-        <Surface className="room-overview-manage" tone="quiet">
-          <div>
-            <p className="ui-eyebrow">MANAGE</p>
-            <h2>Kontrol Room</h2>
-            <p>Pin untuk akses cepat atau hapus Room jika memang tidak akan dipakai.</p>
-          </div>
-          <RoomActions roomId={room.id} pinned={room.isPinned} />
-        </Surface>
       </div>
     </AppShell>
   );
