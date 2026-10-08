@@ -201,6 +201,7 @@ function addMediaAssets(
       width: item.width ?? item.technicalSignals?.width ?? null,
       height: item.height ?? item.technicalSignals?.height ?? null,
       durationSec: item.durationSec ?? item.technicalSignals?.durationSec ?? null,
+      audioPresence: item.technicalSignals?.audioPresence ?? "unknown",
       contributorName: item.contributorName?.trim() || null,
       originalFileName: item.originalFileName,
     };
@@ -323,7 +324,7 @@ function selectedExperience(studio: RoomStudioConfig) {
 }
 
 export async function bakeOwnedReceiver(ownerUid: string, roomId: string) {
-  let room = await getOwnedRoom(ownerUid, roomId);
+  const room = await getOwnedRoom(ownerUid, roomId);
   if (room.status === "collecting" || room.status === "closed") {
     throw new ApiError("ROOM_NOT_CONFIGURED", "Selesaikan Settings Studio sebelum Bake.", 409);
   }
@@ -397,38 +398,25 @@ export async function bakeOwnedReceiver(ownerUid: string, roomId: string) {
   };
 
   const bakedAt = new Date().toISOString();
-  if (room.status !== "baking") {
-    await backendRepositories.rooms.setStatus(room.id, "baking", bakedAt);
-    room = { ...room, status: "baking", updatedAt: bakedAt };
-  }
-
-  try {
-    const manifest = await backendRepositories.receivers.publishSnapshot({
-      roomId: room.id,
-      receiverId,
-      manifest: draft,
-      assets,
-      bakedAt,
-    });
-    const finalRoom: Room = {
-      ...room,
-      receiverId,
-      status: "ready",
-      firstBakedAt: room.firstBakedAt ?? bakedAt,
-      lastBakedAt: bakedAt,
-      updatedAt: bakedAt,
-    };
-    return { room: finalRoom, manifest, reused: false };
-  } catch (error) {
-    const failedAt = new Date().toISOString();
-    await backendRepositories.rooms.setStatus(room.id, "configuring", failedAt).catch(() => undefined);
-    throw error;
-  }
+  const manifest = await backendRepositories.receivers.publishSnapshot({
+    roomId: room.id, receiverId, manifest: draft, assets, bakedAt,
+    expectedStudioUpdatedAt: studio.updatedAt,
+  });
+  const finalRoom: Room = {
+    ...room, receiverId: manifest.receiverId, status: "ready",
+    firstBakedAt: room.firstBakedAt ?? manifest.bakedAt,
+    lastBakedAt: manifest.bakedAt, updatedAt: manifest.bakedAt,
+  };
+  return { room: finalRoom, manifest, reused: manifest.bakedAt !== bakedAt };
 }
 
 export async function getPublishedReceiver(receiverId: string): Promise<ReceiverManifest> {
   const manifest = await backendRepositories.receivers.getManifest(receiverId);
   if (!manifest) throw new ApiError("RECEIVER_NOT_FOUND", "Receiver tidak ditemukan.", 404);
+  const room = await backendRepositories.rooms.getRoom(manifest.room.id);
+  if (!room || room.config?._deleting || room.receiverId !== receiverId || (room.expiresAt && Date.parse(room.expiresAt) <= Date.now())) {
+    throw new ApiError("RECEIVER_EXPIRED", "Kenangan ini sudah tidak tersedia. Hubungi pembuatnya untuk informasi lebih lanjut.", 404);
+  }
   return receiverManifestSchema.parse(manifest);
 }
 

@@ -1,3 +1,4 @@
+import { ApiError } from "@/lib/http";
 import "server-only";
 
 import type { DocumentData } from "firebase-admin/firestore";
@@ -100,7 +101,7 @@ export class FirestoreSubmissionRepository implements SubmissionRepository {
       const deadline = roomData?.collectionDeadline;
       const deadlineMs = deadline?.toMillis?.() ?? Date.parse(String(deadline ?? ""));
       if (
-        !roomSnapshot.exists ||
+        !roomSnapshot.exists || roomData?.config?._deleting ||
         roomData?.status !== "collecting" ||
         !Number.isFinite(deadlineMs) ||
         deadlineMs <= Date.now()
@@ -108,6 +109,25 @@ export class FirestoreSubmissionRepository implements SubmissionRepository {
         return "closed" as const;
       }
 
+      let previousCount = roomData?.contributionCount;
+      let previousBytes = roomData?.contributionBytes;
+      // Older production Rooms predate counters. Seed them transactionally once
+      // instead of granting existing Rooms another full allowance after rollout.
+      if (previousCount === undefined || previousBytes === undefined) {
+        const [submissions, media] = await Promise.all([
+          transaction.get(roomRef.collection("submissions")),
+          transaction.get(roomRef.collection("media")),
+        ]);
+        const sizes = new Map<string, number>();
+        submissions.docs.forEach(doc => (doc.data().stagedMedia ?? []).forEach((item: { id: string; sizeBytes: number }) => sizes.set(item.id, item.sizeBytes)));
+        media.docs.forEach(doc => sizes.set(doc.id, Number(doc.data().sizeBytes ?? 0)));
+        previousCount ??= submissions.size;
+        previousBytes ??= [...sizes.values()].reduce((sum, size) => sum + size, 0);
+      }
+      const count = Number(previousCount);
+      const bytes = Number(previousBytes) + submission.stagedMedia.reduce((sum, media) => sum + media.sizeBytes, 0);
+      if (count >= 100 || bytes > 2 * 1024 ** 3) throw new ApiError("ROOM_CAPACITY", "Room sudah mencapai batas 100 kiriman atau 2 GB media. Hubungi pembuat Room.", 409);
+      transaction.update(roomRef, { contributionCount: count + 1, contributionBytes: bytes });
       transaction.create(submissionRef, {
         id: submission.id,
         roomId: submission.roomId,
@@ -136,6 +156,8 @@ export class FirestoreSubmissionRepository implements SubmissionRepository {
     const submissionRef = roomRef.collection("submissions").doc(submissionId);
 
     return db.runTransaction(async (transaction) => {
+      const parent = await transaction.get(roomRef);
+      if (!parent.exists || parent.data()?.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sudah tidak tersedia.", 409);
       const snapshot = await transaction.get(submissionRef);
       if (!snapshot.exists) return "not_found" as const;
 

@@ -1,3 +1,4 @@
+import { consumeRateLimit } from "@/lib/http/rate-limit";
 import "server-only";
 
 import { extname } from "node:path";
@@ -73,8 +74,12 @@ async function persistStudio(room: Room, studio: RoomStudioConfig) {
     ? room.config as Record<string, unknown>
     : {};
   const updatedAt = new Date().toISOString();
-  await backendRepositories.rooms.setConfig(room.id, { ...currentConfig, studio }, updatedAt);
+  await backendRepositories.rooms.setConfig(room.id, { ...currentConfig, studio }, updatedAt, room.config);
   return { ...room, config: { ...currentConfig, studio }, updatedAt } satisfies Room;
+}
+
+function assertDraftVersion(room: Room, expected?: string) {
+  if (expected && getRoomStudioConfig(room).updatedAt !== expected) throw new ApiError("STUDIO_CHANGED", "Studio sudah diubah di tab lain. Muat ulang sebelum melanjutkan.", 409);
 }
 
 function assertConfiguring(room: Room) {
@@ -102,6 +107,9 @@ function assertUniqueMediaSettings(settings: StudioMediaSetting[]) {
 function normalizeSelectedMedia(settings: StudioMediaSetting[], media: Media[]) {
   assertUniqueMediaSettings(settings);
   const mediaById = new Map(media.map((item) => [item.id, item]));
+  const videos = settings.filter(setting => mediaById.get(setting.mediaId)?.type === "video").length;
+  const hasPhotos = settings.some(setting => mediaById.get(setting.mediaId)?.type === "photo");
+  if (videos + Number(hasPhotos) > 79) throw new ApiError("STORY_TOO_LONG", "Cerita mendukung 79 bagian media. Kurangi beberapa video agar masih ada ruang untuk album foto.", 400);
 
   return [...settings]
     .sort((a, b) => a.order - b.order)
@@ -114,6 +122,9 @@ function normalizeSelectedMedia(settings: StudioMediaSetting[], media: Media[]) 
       const trimOutSec = setting.trimOutSec ?? null;
       if (item.type === "photo" && (trimInSec !== null || trimOutSec !== null)) {
         throw new ApiError("PHOTO_TRIM_INVALID", "Foto tidak memiliki trim audio/video.", 400);
+      }
+      if (item.type === "video" && trimOutSec !== null && trimOutSec <= (trimInSec ?? 0)) {
+        throw new ApiError("TRIM_INVALID", "Akhir potongan harus setelah awal video.", 400);
       }
       if (item.type === "video" && duration !== null) {
         if (trimInSec !== null && trimInSec >= duration) {
@@ -206,8 +217,9 @@ export async function startOwnedStudio(ownerUid: string, roomId: string) {
 
 export async function saveOwnedStudioSettings(ownerUid: string, roomId: string, rawInput: StudioSettingsRequest) {
   const input = studioSettingsRequestSchema.parse(rawInput);
-  let room = await getOwnedRoom(ownerUid, roomId);
+  const room = await getOwnedRoom(ownerUid, roomId);
   assertConfiguring(room);
+  assertDraftVersion(room, input.expectedStudioUpdatedAt);
 
   const theme = resolveTheme(input.themeId);
   if (!theme) throw new ApiError("THEME_NOT_FOUND", "Theme tidak tersedia.", 400);
@@ -217,12 +229,6 @@ export async function saveOwnedStudioSettings(ownerUid: string, roomId: string, 
   const selectedIds = new Set(selectedMedia.map((item) => item.mediaId));
   assertAnchorsReferenceSelected(input.storyAnchors, selectedIds);
   await assertBackgroundMusic(room, input.backgroundMusic, theme.id);
-
-  if (room.themeId !== theme.id) {
-    const updatedAt = new Date().toISOString();
-    await backendRepositories.rooms.updateRoom(room.id, { themeId: theme.id }, updatedAt);
-    room = { ...room, themeId: theme.id, updatedAt };
-  }
 
   const studio = roomStudioConfigSchema.parse({
     ...getRoomStudioConfig(room),
@@ -245,6 +251,7 @@ export async function selectOwnedDirection(ownerUid: string, roomId: string, raw
   const input = selectDirectionRequestSchema.parse(rawInput);
   const room = await getOwnedRoom(ownerUid, roomId);
   assertConfiguring(room);
+  assertDraftVersion(room, input.expectedStudioUpdatedAt);
   const current = getRoomStudioConfig(room);
   if (!current.directionCandidates.some((item) => item.id === input.directionId)) {
     throw new ApiError("DIRECTION_NOT_FOUND", "Direction yang dipilih tidak tersedia.", 400);
@@ -426,6 +433,9 @@ export async function deleteOwnedRoomMusic(ownerUid: string, roomId: string, mus
   assertConfiguring(room);
   const item = await backendRepositories.roomMusic.getById(room.id, musicId);
   if (!item) return { deleted: false };
+  const studio = getRoomStudioConfig(room);
+  const published = room.receiverId ? await backendRepositories.receivers.getManifest(room.receiverId) : null;
+  if ((studio.backgroundMusic?.source === "room-upload" && studio.backgroundMusic.musicId === musicId) || published?.assets.some(asset => asset.id.includes(musicId))) throw new ApiError("MUSIC_IN_USE", "Musik masih dipakai oleh draf atau cerita yang terbit. Pilih musik lain dan terbitkan perubahan terlebih dahulu.", 409);
   if (item.track.source === "b2") await deletePrivateObjects([item.track.storageObjectKey]);
   await backendRepositories.roomMusic.delete(room.id, musicId);
   return { deleted: true };
@@ -455,6 +465,7 @@ export async function generateOwnedExperienceDirections(ownerUid: string, roomId
   const input = directorGenerateRequestSchema.parse(rawInput);
   const room = await getOwnedRoom(ownerUid, roomId);
   assertConfiguring(room);
+  assertDraftVersion(room, input.expectedStudioUpdatedAt);
   const studio = getRoomStudioConfig(room);
   if (!isStudioReadyForDirection(studio) || !studio.backgroundMusic) {
     throw new ApiError(
@@ -482,13 +493,14 @@ export async function generateOwnedExperienceDirections(ownerUid: string, roomId
     throw new ApiError("STUDIO_MEDIA_CHANGED", "Sebagian media Studio sudah tidak tersedia. Pilih media ulang.", 409);
   }
 
+  await consumeRateLimit("director:" + room.id, 20, 24 * 60 * 60 * 1000);
   const wishIntelligence = await ensureWishIntelligence(studio.wishIntelligence, submissions);
   const studioWithWishes = roomStudioConfigSchema.parse({
     ...studio,
     wishIntelligence,
     updatedAt: new Date().toISOString(),
   });
-  await persistStudio(room, studioWithWishes);
+  const generationRoom = await persistStudio(room, studioWithWishes);
 
   const directionCandidates = await generateExperienceDirections({
     roomId: room.id,
@@ -500,5 +512,7 @@ export async function generateOwnedExperienceDirections(ownerUid: string, roomId
     roomMusic,
     variantCount: input.variantCount,
   });
-  return setOwnedDirectionCandidates(ownerUid, roomId, directionCandidates);
+  const generatedStudio = roomStudioConfigSchema.parse({ ...studioWithWishes, directionCandidates, selectedDirectionId: null, updatedAt: new Date().toISOString() });
+  await persistStudio(generationRoom, generatedStudio);
+  return { studio: generatedStudio };
 }

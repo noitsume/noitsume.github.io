@@ -317,6 +317,7 @@ function promptFor(input: DirectorInput) {
     "Use only the provided Aura IDs and Transition IDs. Keep emotional importance separate from visual energy.",
     "Micro-copy may be short chapter/bridge text, but never fabricate a wish or pretend to quote a contributor.",
     `Return ${input.variantCount} meaningfully different candidate direction(s).`,
+    "Write name, summary, storyArc and microCopy in natural Indonesian for a nontechnical recipient. Never expose internal schema, AI, fallback or implementation terminology in these fields.",
     `Recipient: ${input.recipientName}; occasion: ${input.occasionId}.`,
     `Theme: ${JSON.stringify(theme ? { id: theme.id, personality: theme.themePersonality, motion: theme.motionPersonality } : null)}.`,
     `Music: ${JSON.stringify(input.studio.backgroundMusic ? musicContext(input.studio.backgroundMusic, input.roomMusic) : null)}.`,
@@ -350,7 +351,12 @@ function candidateFromRaw(input: DirectorInput, raw: RawCandidate, generationMod
   });
 }
 
-function fallbackCandidate(input: DirectorInput): ExperienceDNA {
+function fallbackCandidate(input: DirectorInput, variant = 0): ExperienceDNA {
+  const preset = [
+    { name: "Hangat & dekat", summary: "Alur yang lembut, cahaya hangat, dan ruang untuk menikmati setiap kenangan.", arc: ["Sapaan hangat", "Kenangan bersama", "Momen berarti", "Kesan yang tinggal"], pace: 1, intensity: .42, aura: "gentle-breath", beat: "soft" },
+    { name: "Penuh rasa", summary: "Foto berganti lebih perlahan dengan suasana tenang, memberi ruang bagi cerita dan ucapan.", arc: ["Untukmu", "Mengenang bersama", "Dari hati", "Selalu berarti"], pace: 1.4, intensity: .24, aura: "gentle-bokeh", beat: "none" },
+    { name: "Rayakan bersama", summary: "Album bergerak lebih cepat, dengan aksen cahaya yang mengikuti musik untuk suasana perayaan.", arc: ["Hari istimewa", "Tawa bersama", "Rayakan momennya", "Cerita berlanjut"], pace: .75, intensity: .72, aura: "celebration-particles", beat: "strong" },
+  ][variant];
   const mediaById = new Map(input.media.map((item) => [item.id, item]));
   const anchorRole = new Map<string, (typeof ROLE_VALUES)[number]>();
   input.studio.storyAnchors.opening.forEach((id) => anchorRole.set(id, "opening"));
@@ -367,10 +373,10 @@ function fallbackCandidate(input: DirectorInput): ExperienceDNA {
       auraIds: allowedAuras.includes("gentle-bokeh") ? ["gentle-bokeh"] : [allowedAuras[0]],
       transitionInId: transition,
       transitionOutId: transition,
-      dwellSeconds: 5,
-      intensity: 0.2,
-      beatAlignment: "soft",
-      microCopy: `Sebuah kenangan untuk ${input.recipientName}`,
+      dwellSeconds: 5 * preset.pace,
+      intensity: preset.intensity,
+      beatAlignment: preset.beat as RawSectionTuning["beatAlignment"],
+      microCopy: variant === 1 ? `Hal-hal kecil yang berarti, untuk ${input.recipientName}.` : variant === 2 ? `Hari ini, kita merayakan ${input.recipientName}.` : `Sebuah kenangan untuk ${input.recipientName}`,
       wishIds: [],
     },
   ];
@@ -391,30 +397,34 @@ function fallbackCandidate(input: DirectorInput): ExperienceDNA {
     tuning.push({
       sectionId: plan.id,
       role,
-      auraIds: [aura],
+      auraIds: [allowedAuras.includes(preset.aura as AuraId) ? preset.aura : aura],
       transitionInId: transition,
       transitionOutId: transition,
-      dwellSeconds: sectionDefaultDwell(plan, mediaById),
-      intensity,
-      beatAlignment: plan.type === "video" ? "soft" : "none",
+      dwellSeconds: clamp(sectionDefaultDwell(plan, mediaById) * preset.pace, 2, 20),
+      intensity: (intensity + preset.intensity) / 2,
+      beatAlignment: preset.beat as RawSectionTuning["beatAlignment"],
       microCopy: null,
       wishIds: [],
     });
   }
 
   return candidateFromRaw(input, {
-    name: "Balanced Memory",
-    summary: "Fallback deterministic yang memasukkan seluruh media pilihan dan memakai Story Anchors bila tersedia.",
-    direction: "deterministic-balanced-memory",
-    storyArc: ["warm-opening", "memory-flow", "emotional-rise", "soft-ending"],
+    name: preset.name,
+    summary: preset.summary,
+    direction: `curated-memory-${variant + 1}`,
+    storyArc: preset.arc,
     energyCurve: [0.2, 0.38, 0.62, 0.48, 0.26],
     emotionCurve: [0.34, 0.5, 0.72, 0.9, 0.68],
     sectionTuning: tuning,
   }, "fallback");
 }
 
+export function fallbackDirections(input: DirectorInput): ExperienceDNA[] {
+  return Array.from({ length: Math.min(3, Math.max(1, input.variantCount)) }, (_, index) => fallbackCandidate(input, index));
+}
+
 export async function generateExperienceDirections(input: DirectorInput): Promise<ExperienceDNA[]> {
-  if (!input.studio.backgroundMusic) return [fallbackCandidate(input)];
+  if (!input.studio.backgroundMusic) throw new Error("Pilih musik sebelum merangkai cerita.");
 
   try {
     const ai = getGeminiClient();
@@ -438,13 +448,13 @@ export async function generateExperienceDirections(input: DirectorInput): Promis
     );
 
     const text = response.text?.trim();
-    if (!text) return [fallbackCandidate(input)];
+    if (!text) return fallbackDirections(input);
     const parsed = JSON.parse(text) as { candidates?: RawCandidate[] };
     const rawCandidates = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, input.variantCount) : [];
     const candidates = rawCandidates.map((candidate) => candidateFromRaw(input, candidate, "gemini"));
-    return candidates.length > 0 ? candidates : [fallbackCandidate(input)];
+    return [...candidates, ...fallbackDirections(input).slice(candidates.length)].slice(0, input.variantCount);
   } catch (error) {
     console.error("Gemini Experience Director fallback", error);
-    return [fallbackCandidate(input)];
+    return fallbackDirections(input);
   }
 }

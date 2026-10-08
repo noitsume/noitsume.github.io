@@ -6,10 +6,10 @@ import { CalendarIcon, GridIcon, HomeIcon, InboxIcon } from "@/components/ui";
 import { brand } from "@/config/brand";
 
 const navigation = [
-  { label: "Dashboard", href: "/dashboard", icon: HomeIcon, ready: true },
-  { label: "Event Mendatang", href: "/events", icon: CalendarIcon, ready: false },
-  { label: "Room Template", href: "/templates", icon: GridIcon, ready: false },
-  { label: "Submission", href: "/submissions", icon: InboxIcon, ready: false },
+  { label: "Kenangan saya", href: "/dashboard", icon: HomeIcon, ready: true },
+  { label: "Momen mendatang", href: "/events", icon: CalendarIcon, ready: true },
+  { label: "Koleksi tema", href: "/templates", icon: GridIcon, ready: true },
+  { label: "Panduan", href: "/guide", icon: InboxIcon, ready: true },
 ];
 
 export function Sidebar({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
@@ -39,6 +39,7 @@ export function Sidebar({ mobile = false, onNavigate }: { mobile?: boolean; onNa
             <Link
               className={`sidebar__item ${active ? "sidebar__item--active" : ""}`.trim()}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               key={item.label}
               onClick={onNavigate}
             >

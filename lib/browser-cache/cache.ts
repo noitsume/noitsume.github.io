@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  getCacheEntry,
   deleteCacheEntry,
   listCacheEntries,
   putCacheEntry,
@@ -28,53 +29,45 @@ function stableRequest(cacheKey: string) {
 }
 
 export async function getCachedResource(cacheKey: string) {
-  ensureCacheStorage();
-  const cache = await caches.open(CACHE_NAME);
-  const response = await cache.match(stableRequest(cacheKey));
-  if (response) void touchCacheEntry(cacheKey);
-  return response ?? null;
+  try {
+    ensureCacheStorage();
+    const entry = await getCacheEntry(cacheKey);
+    if (!entry || (entry.expiresAt !== undefined && entry.expiresAt <= Date.now())) {
+      await deleteCachedResource(cacheKey);
+      return null;
+    }
+    const cache = await caches.open(CACHE_NAME);
+    const response = await cache.match(stableRequest(cacheKey));
+    if (response) void touchCacheEntry(cacheKey).catch(() => undefined);
+    return response ?? null;
+  } catch { return null; }
 }
 
 export async function fetchAndCacheResource(input: CacheResourceInput) {
-  ensureCacheStorage();
-
   const cached = await getCachedResource(input.cacheKey);
   if (cached) return { response: cached, source: "cache" as const };
-
-  const networkResponse = await fetch(input.sourceUrl, {
-    method: "GET",
-    credentials: "omit",
-    cache: "no-store",
-  });
-
-  if (!networkResponse.ok) {
-    throw new Error(`Media fetch gagal (${networkResponse.status}).`);
-  }
-
-  const sizeBytes = Number(networkResponse.headers.get("content-length") || 0);
-  const contentType = networkResponse.headers.get("content-type") || undefined;
-
-  if (shouldPersistResource({ kind: input.kind, sizeBytes })) {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.put(stableRequest(input.cacheKey), networkResponse.clone());
-
-    const now = Date.now();
-    await putCacheEntry({
-      cacheKey: input.cacheKey,
-      kind: input.kind,
-      resourceId: input.resourceId,
-      roomId: input.roomId,
-      contentType,
-      sizeBytes,
-      cachedAt: now,
-      lastAccessedAt: now,
-      expiresAt: input.expiresAt,
-      version: input.version ?? 1,
-    });
-
-    await enforceKenanginCacheBudget();
-  }
-
+  const networkResponse = await fetch(input.sourceUrl, { credentials: "omit", cache: "no-store" });
+  if (!networkResponse.ok) throw new Error("Media belum dapat dimuat (" + networkResponse.status + ").");
+  try {
+    ensureCacheStorage();
+    const declaredSize = Number(networkResponse.headers.get("content-length") ?? 0);
+    // Unknown-size responses and large videos stay on the normal streaming path.
+    if (declaredSize > 0 && declaredSize <= 25 * 1024 ** 2 && shouldPersistResource({ kind: input.kind, sizeBytes: declaredSize })) {
+      const blob = await networkResponse.clone().blob();
+      const sizeBytes = blob.size;
+      const cache = await caches.open(CACHE_NAME);
+      const response = new Response(blob, { headers: { "content-type": blob.type } });
+      const now = Date.now();
+      await evictExpiredResources(now);
+      await cache.put(stableRequest(input.cacheKey), response);
+      try {
+        await putCacheEntry({ cacheKey: input.cacheKey, kind: input.kind, resourceId: input.resourceId, roomId: input.roomId, contentType: blob.type, sizeBytes, cachedAt: now, lastAccessedAt: now, expiresAt: input.expiresAt ?? now + 86400000, version: input.version ?? 1 });
+        await enforceKenanginCacheBudget();
+      } catch {
+        await cache.delete(stableRequest(input.cacheKey));
+      }
+    }
+  } catch { /* Denied storage or quota must never interrupt media playback. */ }
   return { response: networkResponse, source: "network" as const };
 }
 

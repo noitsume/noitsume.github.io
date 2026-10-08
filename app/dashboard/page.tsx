@@ -1,3 +1,5 @@
+import { getRoomAnalytics } from "@/lib/receiver/analytics";
+import { roomDestination } from "@/lib/domain/journey";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardRoomSections } from "@/components/dashboard/dashboard-room-sections";
@@ -95,6 +97,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ended: rooms.filter((room) => getDashboardRoomStatus(room) === "ended").length,
   };
 
+  const analytics = await getRoomAnalytics(rooms.filter(room => room.receiverId).map(room => room.id));
+  const opens = analytics.reduce((sum, day) => sum + day.opens, 0);
+  const engaged = analytics.reduce((sum, day) => sum + day.engaged, 0);
   const rightRail = (
     <div className="dashboard-rail">
       <Surface className="dashboard-rail__panel" tone="elevated">
@@ -107,7 +112,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <ol className="history-list">
             {recentRooms.map((room, index) => (
               <li key={room.id}>
-                <Link className="history-list__item" href={`/rooms/${room.id}`}>
+                <Link className="history-list__item" href={roomDestination(room).href}>
                   <span className="history-list__index">{index + 1}</span>
                   <div>
                     <strong>{room.title}</strong>
@@ -126,34 +131,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <Surface className="dashboard-rail__panel" tone="quiet">
         <div className="rail-label-row">
           <span className="ui-eyebrow">7 HARI TERAKHIR</span>
-          <Badge className="ui-badge--success">LIVE</Badge>
+          <Badge>7 HARI</Badge>
         </div>
         <h3>Penonton Final</h3>
         <div className="viewer-hero">
-          <strong>0</strong>
-          <span>orang menonton final</span>
+          <strong>{engaged}</strong>
+          <span>kunjungan yang menikmati cerita</span>
         </div>
         <div className="viewer-chart" aria-label="Grafik 7 hari terakhir">
-          {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map((day) => (
-            <div key={day} className="viewer-chart__day">
-              <span className="viewer-chart__value">0</span>
-              <span className="viewer-chart__dot" />
-              <small>{day}</small>
+          {analytics.map((day) => (
+            <div key={day.date} className="viewer-chart__day">
+              <span className="viewer-chart__value">{day.engaged}</span>
+              <span className="viewer-chart__bar" style={{ height: `${8 + (day.engaged / Math.max(1, ...analytics.map(item => item.engaged))) * 48}px` }} />
+              <small>{new Intl.DateTimeFormat("id-ID", { weekday: "short", timeZone: "Asia/Jakarta" }).format(new Date(day.date + "T12:00:00+07:00"))}</small>
             </div>
           ))}
         </div>
-        <p className="viewer-chart__note">Belum ada pembanding</p>
+        <p className="viewer-chart__note">Diperbarui saat halaman dibuka</p>
         <div className="viewer-metrics">
           <div>
             <span>Link final dibuka</span>
-            <strong>0 orang</strong>
+            <strong>{opens} kunjungan</strong>
           </div>
           <div>
             <span>Menonton final</span>
-            <strong>0 orang</strong>
+            <strong>{engaged} kunjungan</strong>
           </div>
         </div>
-        <p className="viewer-footnote">Analytics Receiver baru akan diaktifkan setelah alur Receiver tersedia.</p>
+        <p className="viewer-footnote">Dihitung sekali per browser per Room per hari. Menikmati cerita berarti aktif minimal 10 detik setelah membuka kejutan.</p>
       </Surface>
     </div>
   );
@@ -163,22 +168,30 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <div className="dashboard-page">
         <Surface className="dashboard-hero" tone="elevated">
           <div className="dashboard-hero__copy">
-            <p className="ui-eyebrow">KENANGIN.ID · OWNER DASHBOARD</p>
+            <p className="ui-eyebrow">RUANG UNTUK YANG BERARTI</p>
             <div className="dashboard-hero__title-row">
-              <h1>Dashboard Owner</h1>
+              <h1>Kenangan kecil, berarti besar.</h1>
             </div>
             <p>
-              Kelola room, pantau submission, dan siapkan kejutan personal dari satu workspace yang rapi dan terorganisir.
+              Kumpulkan cerita dari orang terdekat. Rangkai menjadi kejutan yang akan selalu diingat.
             </p>
           </div>
 
           <div className="dashboard-stats">
             <StatItem label="Total Room" value={stats.total} description="Seluruh workspace" tone="coral" />
-            <StatItem label="Waiting" value={stats.waiting} description="Belum melakukan Bake pertama" tone="neutral" />
-            <StatItem label="On Working" value={stats.working} description="Sudah melakukan Bake pertama" tone="green" />
-            <StatItem label="Ended" value={stats.ended} description="Sudah melewati kadaluarsa" tone="indigo" />
+            <StatItem label="Disiapkan" value={stats.waiting} description="Sedang dirangkai" tone="neutral" />
+            <StatItem label="Diterbitkan" value={stats.working} description="Siap dibagikan" tone="green" />
+            <StatItem label="Berakhir" value={stats.ended} description="Sudah melewati kadaluarsa" tone="indigo" />
           </div>
         </Surface>
+
+        <DashboardRoomSections
+          initialRooms={sortedRooms}
+          creatorName={user.displayName}
+          sortMode={sortMode}
+          themes={themes}
+          initialCreateOpen={create === "1"}
+        />
 
         <section className="dashboard-section" aria-labelledby="upcoming-heading">
           <SectionHeader
@@ -199,13 +212,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           )}
         </section>
 
-        <DashboardRoomSections
-          initialRooms={sortedRooms}
-          creatorName={user.displayName}
-          sortMode={sortMode}
-          themes={themes}
-          initialCreateOpen={create === "1"}
-        />
+
       </div>
     </AppShell>
   );

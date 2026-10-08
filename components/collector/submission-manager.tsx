@@ -17,11 +17,8 @@ function formatSubmittedAt(value: string) {
 }
 
 function analysisStatusLabel(item: StagedSubmissionMedia | Media) {
-  if (item.analysisStatus === "ready") return "AI ready";
-  if (item.analysisStatus !== "fallback") return "Belum dianalisis";
-  if (item.analysisFailureCode === "gemini_timeout") return "Fallback · timeout";
-  if (item.analysisFailureCode === "invalid_output") return "Fallback · schema";
-  return "Fallback";
+  if (item.analysisStatus === "ready") return "Petunjuk otomatis siap";
+  return "Tetap bisa digunakan dalam cerita";
 }
 
 export function SubmissionManager({
@@ -55,7 +52,7 @@ export function SubmissionManager({
 
   async function runAction(action: "approve" | "exclude" | "delete", ids = activeSelected) {
     if (inFlightRef.current || ids.length === 0) return;
-    if (action === "delete" && !window.confirm(`Hapus ${ids.length} submission beserta media aslinya dari B2?`)) return;
+    if (action === "delete" && !window.confirm(`Hapus ${ids.length} kiriman beserta file aslinya?`)) return;
 
     inFlightRef.current = true;
     setBusy(true);
@@ -88,8 +85,8 @@ export function SubmissionManager({
     return (
       <div className="submission-empty">
         <span className="submission-empty__icon"><CheckIcon size={22} /></span>
-        <h3>Antrean review bersih.</h3>
-        <p>Kiriman baru akan muncul otomatis di sini. Yang sudah di-approve pindah ke Inventori Media, sedangkan yang di-exclude tidak lagi memenuhi antrean.</p>
+        <h3>Semua kiriman sudah diperiksa.</h3>
+        <p>Kiriman baru muncul otomatis di sini. Momen yang kamu terima dapat dilihat melalui tombol Lihat media.</p>
       </div>
     );
   }
@@ -108,8 +105,8 @@ export function SubmissionManager({
           <span>{activeSelected.length > 0 ? `${activeSelected.length} dipilih` : "Pilih semua"}</span>
         </label>
         <div className="submission-toolbar__actions">
-          <Button disabled={busy || activeSelected.length === 0} variant="secondary" onClick={() => runAction("approve")}><CheckIcon size={16} /> Approve</Button>
-          <Button disabled={busy || activeSelected.length === 0} variant="ghost" onClick={() => runAction("exclude")}>Exclude</Button>
+          <Button disabled={busy || activeSelected.length === 0} variant="secondary" onClick={() => runAction("approve")}><CheckIcon size={16} /> Terima</Button>
+          <Button disabled={busy || activeSelected.length === 0} variant="ghost" onClick={() => runAction("exclude")}>Lewati</Button>
           <Button className="submission-action--danger" disabled={busy || activeSelected.length === 0} variant="ghost" onClick={() => runAction("delete")}><TrashIcon size={16} /> Hapus</Button>
         </div>
       </div>
@@ -125,15 +122,15 @@ export function SubmissionManager({
           return (
             <article className={`submission-card ${checked ? "submission-card--selected" : ""}`} key={submission.id}>
               <header className="submission-card__header">
-                <label className="submission-card__check"><input checked={checked} onChange={(event) => setSelected((current) => event.target.checked ? [...current, submission.id] : current.filter((id) => id !== submission.id))} type="checkbox" /></label>
+                <label className="submission-card__check"><input aria-label={`Pilih kiriman dari ${submission.contributorName || "Anonim"}`} disabled={busy} checked={checked} onChange={(event) => setSelected((current) => event.target.checked ? [...current, submission.id] : current.filter((id) => id !== submission.id))} type="checkbox" /></label>
                 <div className="submission-card__identity">
                   <strong>{submission.contributorName || "Anonim"}</strong>
                   <span>{formatSubmittedAt(submission.submittedAt)} · {submissionMedia.length} media</span>
                 </div>
-                <span className="submission-status submission-status--new">Menunggu review</span>
+                <span className="submission-status submission-status--new">Belum diperiksa</span>
               </header>
 
-              {submission.message ? <blockquote className="submission-card__message">“{submission.message}”</blockquote> : null}
+              {submission.message ? submission.message.length > 240 ? <details className="submission-wish"><summary>{submission.message.slice(0, 180)}… <span>Baca ucapan lengkap</span></summary><blockquote className="submission-card__message">{submission.message}</blockquote></details> : <blockquote className="submission-card__message">“{submission.message}”</blockquote> : null}
 
               {submissionMedia.length > 0 ? (
                 <div className="submission-media-grid">
@@ -152,17 +149,12 @@ export function SubmissionManager({
                         )}
                         <figcaption>
                           <span>{item.type === "photo" ? <PhotoIcon size={13} /> : <VideoIcon size={13} />}{item.originalFileName}</span>
-                          <span className={`submission-media__ai submission-media__ai--${item.analysisStatus}`}>
-                            {analysisStatusLabel(item)}
-                          </span>
                         </figcaption>
                         {item.mediaIntelligence?.scene ? (
-                          <div className="submission-media__intelligence">
+                          <details className="submission-media__intelligence"><summary>Petunjuk cerita otomatis</summary>
+                            <small>{analysisStatusLabel(item)}</small>
                             <p>{item.mediaIntelligence.scene}</p>
-                            <div>
-                              {item.mediaIntelligence.suggestedRoles.slice(0, 3).map((role) => <span key={role}>{role.replaceAll("_", " ")}</span>)}
-                            </div>
-                          </div>
+                          </details>
                         ) : null}
                       </figure>
                     );
@@ -171,8 +163,8 @@ export function SubmissionManager({
               ) : null}
 
               <footer className="submission-card__footer">
-                <Button disabled={busy} variant="secondary" onClick={() => runAction("approve", [submission.id])}>Approve</Button>
-                <Button disabled={busy} variant="ghost" onClick={() => runAction("exclude", [submission.id])}>Exclude</Button>
+                <Button disabled={busy} variant="secondary" onClick={() => runAction("approve", [submission.id])}>Terima</Button>
+                <Button disabled={busy} variant="ghost" onClick={() => runAction("exclude", [submission.id])}>Lewati</Button>
                 <Button className="submission-action--danger" disabled={busy} variant="ghost" onClick={() => runAction("delete", [submission.id])}>Hapus</Button>
               </footer>
             </article>

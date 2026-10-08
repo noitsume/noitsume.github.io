@@ -35,6 +35,10 @@ export async function openCacheIndexDb() {
 
   return new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
+    let settled = false;
+    const fail = () => { if (!settled) { settled = true; clearTimeout(timeout); reject(new Error("Penyimpanan lokal belum tersedia.")); } };
+    const timeout = setTimeout(fail, 1200);
+    request.onblocked = fail;
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -46,8 +50,14 @@ export async function openCacheIndexDb() {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("IndexedDB gagal dibuka."));
+    request.onsuccess = () => {
+      clearTimeout(timeout);
+      if (settled) { request.result.close(); return; }
+      settled = true;
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
+    request.onerror = fail;
   });
 }
 

@@ -1,3 +1,4 @@
+import { ApiError } from "@/lib/http";
 import "server-only";
 
 import type { DocumentData } from "firebase-admin/firestore";
@@ -97,6 +98,8 @@ export class FirestoreMediaRepository implements MediaRepository {
       const refs = media.map((item) =>
         db.collection("rooms").doc(item.roomId).collection("media").doc(item.id),
       );
+      const parent = await transaction.get(db.collection("rooms").doc(media[0].roomId));
+      if (!parent.exists || parent.data()?.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sudah tidak tersedia.", 409);
       const snapshots = await Promise.all(refs.map((ref) => transaction.get(ref)));
       if (snapshots.every((snapshot) => snapshot.exists)) return "exists" as const;
 

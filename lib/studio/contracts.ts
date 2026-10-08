@@ -116,6 +116,7 @@ export const roomStudioConfigSchema = z.object({
 });
 
 export const studioSettingsRequestSchema = z.object({
+  expectedStudioUpdatedAt: z.string().datetime().optional(),
   selectedMedia: z.array(studioMediaSettingSchema).min(1).max(100),
   storyAnchors: storyAnchorsSchema,
   storyAnchorsConfirmed: z.boolean(),
@@ -124,6 +125,7 @@ export const studioSettingsRequestSchema = z.object({
 });
 
 export const selectDirectionRequestSchema = z.object({
+  expectedStudioUpdatedAt: z.string().datetime().optional(),
   directionId: z.string().min(1),
 });
 
@@ -160,6 +162,7 @@ export const roomMusicAnalysisInputSchema = z.object({
 });
 
 export const directorGenerateRequestSchema = z.object({
+  expectedStudioUpdatedAt: z.string().datetime().optional(),
   variantCount: z.number().int().min(1).max(3).default(3),
 });
 

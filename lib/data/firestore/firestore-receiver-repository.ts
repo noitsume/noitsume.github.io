@@ -1,4 +1,5 @@
 import "server-only";
+import { ApiError } from "@/lib/http";
 
 import type { DocumentData } from "firebase-admin/firestore";
 import {
@@ -46,24 +47,24 @@ export class FirestoreReceiverRepository implements ReceiverRepository {
   async publishSnapshot(input: PublishReceiverSnapshotInput): Promise<ReceiverManifest> {
     const db = firestoreDb();
     const roomRef = db.collection("rooms").doc(input.roomId);
-    const receiverRef = db.collection("receivers").doc(input.receiverId);
-
     return db.runTransaction(async (transaction) => {
-      const [roomSnapshot, receiverSnapshot] = await Promise.all([
-        transaction.get(roomRef),
-        transaction.get(receiverRef),
-      ]);
-      if (!roomSnapshot.exists) throw new Error("Room tidak ditemukan saat publish Receiver.");
-
-      const currentReceiverId = roomSnapshot.data()?.receiverId ?? null;
-      if (currentReceiverId && currentReceiverId !== input.receiverId) {
-        throw new Error("Receiver ID Room berubah saat Bake berjalan.");
+      const roomSnapshot = await transaction.get(roomRef);
+      const room = roomSnapshot.data();
+      if (!room || room.config?._deleting) throw new ApiError("ROOM_NOT_FOUND", "Room tidak ditemukan saat penerbitan.", 404);
+      if (room.config?.studio?.updatedAt !== input.expectedStudioUpdatedAt || room.themeId !== input.manifest.theme.id || room.title !== input.manifest.room.title || room.recipientName !== input.manifest.room.recipientName) {
+        throw new ApiError("STUDIO_CHANGED", "Isi Room berubah saat disiapkan. Periksa Studio lalu terbitkan kembali.", 409);
       }
+      const receiverId = room.receiverId ?? input.receiverId;
+      const receiverRef = db.collection("receivers").doc(receiverId);
+      const receiverSnapshot = await transaction.get(receiverRef);
+      // A retried or simultaneous request reuses the successful publication.
+      if (room.status === "ready" && receiverSnapshot.exists) return mapManifest(receiverId, receiverSnapshot.data()!);
+      if (room.status !== "configuring" && room.status !== "baking") throw new ApiError("ROOM_CHANGED", "Room belum siap diterbitkan.", 409);
 
       const revision = Number(receiverSnapshot.data()?.revision ?? 0) + 1;
       const manifest = receiverManifestSchema.parse({
         ...input.manifest,
-        receiverId: input.receiverId,
+        receiverId,
         revision,
         bakedAt: input.bakedAt,
       });
@@ -86,7 +87,7 @@ export class FirestoreReceiverRepository implements ReceiverRepository {
 
       const firstBakedAt = roomSnapshot.data()?.firstBakedAt ?? toTimestamp(input.bakedAt);
       transaction.update(roomRef, {
-        receiverId: input.receiverId,
+        receiverId,
         status: "ready",
         firstBakedAt,
         lastBakedAt: toTimestamp(input.bakedAt),

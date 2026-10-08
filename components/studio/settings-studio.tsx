@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Dialog } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { curatedSongs } from "@/config/songs";
 import { curatedThemes } from "@/config/themes";
@@ -17,6 +18,7 @@ import type {
   StoryAnchors,
   StudioMediaSetting,
 } from "@/lib/studio/contracts";
+import { studioSettingsRequestSchema, studioMediaSettingSchema } from "@/lib/studio/contracts";
 import {
   CheckIcon,
   PhotoIcon,
@@ -104,6 +106,9 @@ export function SettingsStudio({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [musicFile, setMusicFile] = useState<File | null>(null);
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exitTarget, setExitTarget] = useState(`/rooms/${encodeURIComponent(roomId)}`);
+  const [draftReady, setDraftReady] = useState(false);
   const [deepAnalysisNote, setDeepAnalysisNote] = useState<string | null>(null);
 
   const selectedIds = useMemo(() => new Set(selectedMedia.map((item) => item.mediaId)), [selectedMedia]);
@@ -129,6 +134,67 @@ export function SettingsStudio({
     [backgroundMusic, studio.backgroundMusic],
   );
 
+  const dirty = !mediaStepPersisted || JSON.stringify(anchors) !== JSON.stringify(studio.storyAnchors) || JSON.stringify(backgroundMusic) !== JSON.stringify(studio.backgroundMusic);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      try {
+        const raw = sessionStorage.getItem(`kenangin-studio:${roomId}`);
+        if (raw) {
+          const draft = studioSettingsRequestSchema.extend({ selectedMedia: studioMediaSettingSchema.array().max(100) }).safeParse(JSON.parse(raw));
+          if (draft.success && draft.data.expectedStudioUpdatedAt === initialStudio.updatedAt && draft.data.selectedMedia.every(item => initialMedia.some(media => media.id === item.mediaId))) {
+            setSelectedMedia(draft.data.selectedMedia);
+            setAnchors(draft.data.storyAnchors);
+            setThemeId(draft.data.themeId);
+            setBackgroundMusic(draft.data.backgroundMusic);
+            setActiveStep("media");
+            setNotice("Pilihan yang belum tersimpan dipulihkan dari tab ini. Periksa lalu lanjutkan untuk menyimpan.");
+          } else sessionStorage.removeItem(`kenangin-studio:${roomId}`);
+        }
+      } catch { /* Storage can be unavailable in private browsing. */ }
+      setDraftReady(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [roomId, initialStudio.updatedAt, initialMedia]);
+  useEffect(() => {
+    if (!draftReady) return;
+    try {
+      const key = `kenangin-studio:${roomId}`;
+      if (!dirty) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, JSON.stringify({ expectedStudioUpdatedAt: studio.updatedAt, selectedMedia, storyAnchors: anchors, storyAnchorsConfirmed: studio.storyAnchorsConfirmed, themeId, backgroundMusic }));
+    } catch { /* The navigation guard still protects edits if storage is denied. */ }
+  }, [draftReady, dirty, roomId, studio.updatedAt, studio.storyAnchorsConfirmed, selectedMedia, anchors, themeId, backgroundMusic]);
+  useEffect(() => {
+    if (!dirty && !busy) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, busy]);
+  useEffect(() => {
+    if (!dirty && !busy) return;
+    const guard = (event: MouseEvent) => {
+      if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+      const url = new URL(link.href, location.href);
+      if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+      event.preventDefault(); event.stopPropagation();
+      if (!busy) { setExitTarget(url.pathname + url.search + url.hash); setExitOpen(true); }
+    };
+    document.addEventListener("click", guard, true);
+    return () => document.removeEventListener("click", guard, true);
+  }, [dirty, busy]);
+  useEffect(() => {
+    document.querySelector<HTMLElement>(".studio-stepper")?.scrollIntoView({ block: "start" });
+  }, [activeStep]);
+  async function saveAndExit() {
+    setBusy("save-media");
+    try {
+      await persistSettings({ storyAnchorsConfirmed: studio.storyAnchorsConfirmed && mediaStepPersisted });
+      router.push(exitTarget);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Draf belum tersimpan."); setExitOpen(false); }
+    finally { setBusy(null); }
+  }
+
   function clearFeedback() {
     setError(null);
     setNotice(null);
@@ -143,6 +209,10 @@ export function SettingsStudio({
         .map((setting, order) => ({ ...setting, order }));
       setSelectedMedia(next);
       setAnchors((current) => cleanAnchors(current, next));
+      return;
+    }
+    if (selectedMedia.length >= 100 || selectedVideoCount + Number(selectedPhotoCount > 0 || item.type === "photo") + Number(item.type === "video") > 79) {
+      setError("Pilih maksimal 100 media dengan 79 bagian cerita. Semua foto ditempatkan dalam satu album.");
       return;
     }
     setSelectedMedia((current) => [...current, defaultMediaSetting(item, current.length)]);
@@ -184,6 +254,7 @@ export function SettingsStudio({
       headers: { "content-type": "application/json", "x-csrf-token": csrfToken },
       credentials: "same-origin",
       body: JSON.stringify({
+        expectedStudioUpdatedAt: studio.updatedAt,
         selectedMedia,
         storyAnchors: nextAnchors,
         storyAnchorsConfirmed: input.storyAnchorsConfirmed,
@@ -195,6 +266,8 @@ export function SettingsStudio({
     if (!response.ok || !payload?.ok) throw new Error(payload?.error?.message ?? "Settings Studio belum berhasil disimpan.");
     const nextStudio = payload.data.studio as RoomStudioConfig;
     setStudio(nextStudio);
+    setSelectedMedia(nextStudio.selectedMedia);
+    setThemeId(nextStudio.themeId);
     setAnchors(nextStudio.storyAnchors);
     setBackgroundMusic(nextStudio.backgroundMusic);
     return nextStudio;
@@ -202,13 +275,14 @@ export function SettingsStudio({
 
   async function saveMediaStep() {
     if (busy || selectedMedia.length === 0) return;
+    if (mediaStepPersisted) { setActiveStep("anchors"); return; }
     clearFeedback();
     setBusy("save-media");
     try {
       const next = await persistSettings({ storyAnchorsConfirmed: false, nextAnchors: cleanAnchors(anchors, selectedMedia) });
       setStudio(next);
       setActiveStep("anchors");
-      setNotice(`${selectedMedia.length} media dipilih: ${selectedVideoCount} video section${selectedPhotoCount > 0 ? ` + 1 photo-slide (${selectedPhotoCount} foto)` : ""}.`);
+      setNotice(`${selectedMedia.length} momen tersimpan. Selanjutnya, beri petunjuk cerita atau langsung lanjutkan.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Pilihan media belum tersimpan.");
     } finally {
@@ -219,12 +293,14 @@ export function SettingsStudio({
   function toggleAnchor(role: keyof StoryAnchors, mediaId: string) {
     setAnchors((current) => {
       const exists = current[role].includes(mediaId);
+      if (!exists && current[role].length >= 8) return current;
       return { ...current, [role]: exists ? current[role].filter((id) => id !== mediaId) : [...current[role], mediaId] };
     });
   }
 
   async function saveAnchorStep(skip = false) {
     if (busy) return;
+    if (!skip && anchorsStepPersisted) { setActiveStep("music"); return; }
     clearFeedback();
     setBusy("save-anchors");
     const nextAnchors = skip ? EMPTY_ANCHORS : anchors;
@@ -232,7 +308,7 @@ export function SettingsStudio({
       const next = await persistSettings({ storyAnchorsConfirmed: true, nextAnchors });
       setAnchors(next.storyAnchors);
       setActiveStep("music");
-      setNotice(skip ? "Story Anchors dilewati. Gemini akan menentukan arc dari Media Intelligence." : "Story Anchors tersimpan sebagai guidance untuk Gemini.");
+      setNotice(skip ? "Petunjuk dilewati. Kami akan merangkai alur dari momen pilihanmu." : "Petunjuk cerita tersimpan.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Story Anchors belum tersimpan.");
     } finally {
@@ -348,16 +424,17 @@ export function SettingsStudio({
     if (backgroundMusic.source === "room-upload") {
       const music = roomMusic.find((item) => item.id === backgroundMusic.musicId);
       if (music?.analysis.status !== "ready") {
-        setError("Klik Analyze sampai beatmap lagu berstatus Ready sebelum melanjutkan.");
+        setError("Tekan Siapkan musik pada lagu yang diunggah sebelum melanjutkan.");
         return;
       }
     }
+    if (musicStepPersisted) { setActiveStep("direction"); return; }
     setBusy("save-music");
     try {
       const next = await persistSettings({ storyAnchorsConfirmed: true, nextBackgroundMusic: backgroundMusic });
       setStudio(next);
       setActiveStep("direction");
-      setNotice("Background music dikunci untuk direction. Timeline musik akan continuous pada Receiver.");
+      setNotice("Musik tersimpan. Sekarang pilih gaya ceritamu.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Background music belum tersimpan.");
     } finally {
@@ -426,13 +503,13 @@ export function SettingsStudio({
     setBusy("generate");
     try {
       await deepenAnchorsBestEffort();
-      setDeepAnalysisNote("Gemini Experience Director sedang menyusun 3 direction. Fallback baru dipakai setelah batas tunggu Director.");
+      setDeepAnalysisNote("Sedang merangkai tiga gaya dari momen dan musik pilihanmu. Proses ini dapat memerlukan sekitar satu menit.");
       const csrfToken = await getCsrfToken();
       const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/studio/generate`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-csrf-token": csrfToken },
         credentials: "same-origin",
-        body: JSON.stringify({ variantCount: 3 }),
+        body: JSON.stringify({ variantCount: 3, expectedStudioUpdatedAt: studio.updatedAt }),
       });
       const payload = await response.json();
       if (!response.ok || !payload?.ok) throw new Error(payload?.error?.message ?? "Experience Director gagal menyusun direction.");
@@ -440,8 +517,8 @@ export function SettingsStudio({
       setStudio(next);
       const mode = next.directionCandidates[0]?.generationMode;
       setNotice(mode === "fallback"
-        ? "Gemini tidak selesai dalam gate-nya. Direction deterministic fallback dibuat dengan seluruh media pilihan."
-        : `${next.directionCandidates.length} direction Gemini siap dibandingkan.`);
+        ? "Layanan AI sedang tidak tersedia. Tiga gaya bawaan telah disiapkan dengan semua momen pilihanmu."
+        : `${next.directionCandidates.length} gaya cerita siap dipilih.`);
     } catch (generationError) {
       setError(generationError instanceof Error ? generationError.message : "Direction belum berhasil dibuat.");
     } finally {
@@ -460,13 +537,13 @@ export function SettingsStudio({
         method: "POST",
         headers: { "content-type": "application/json", "x-csrf-token": csrfToken },
         credentials: "same-origin",
-        body: JSON.stringify({ directionId }),
+        body: JSON.stringify({ directionId, expectedStudioUpdatedAt: studio.updatedAt }),
       });
       const payload = await response.json();
       if (!response.ok || !payload?.ok) throw new Error(payload?.error?.message ?? "Direction belum dapat dipilih.");
       const next = payload.data.studio as RoomStudioConfig;
       setStudio(next);
-      setNotice("Direction dikunci. Room sudah memenuhi gate untuk masuk Bake pada Patch 8.");
+      setNotice("Gaya cerita tersimpan. Lanjutkan untuk meninjau dan menerbitkan.");
       router.refresh();
     } catch (selectionError) {
       setError(selectionError instanceof Error ? selectionError.message : "Direction belum dapat dipilih.");
@@ -478,25 +555,27 @@ export function SettingsStudio({
   const stepState = {
     media: mediaStepPersisted && studio.selectedMedia.length > 0 ? "done" : "active",
     anchors: !mediaStepPersisted || studio.selectedMedia.length === 0 ? "locked" : anchorsStepPersisted ? "done" : "active",
-    music: !anchorsStepPersisted ? "locked" : musicStepPersisted ? "done" : "active",
-    direction: !musicStepPersisted ? "locked" : studio.selectedDirectionId ? "done" : "active",
+    music: !mediaStepPersisted || !anchorsStepPersisted ? "locked" : musicStepPersisted ? "done" : "active",
+    direction: !mediaStepPersisted || !anchorsStepPersisted || !musicStepPersisted ? "locked" : studio.selectedDirectionId ? "done" : "active",
   } as const;
 
   return (
     <div className="settings-studio">
+      <div className={`studio-save-state ${dirty ? "is-dirty" : ""}`} role="status">{dirty ? "Ada perubahan. Tekan Lanjut untuk menyimpan." : "Semua pilihan tersimpan."}</div>
       <Surface className="studio-stepper" tone="quiet">
         {(["media", "anchors", "music", "direction"] as StudioStep[]).map((step, index) => {
           const labels = {
-            media: ["Media", "Pilih section"],
-            anchors: ["Story Anchors", "Optional guidance"],
-            music: ["Music", "Template / MP3"],
-            direction: ["Direction", "Gemini + preview"],
+            media: ["Momen", "Foto & video"],
+            anchors: ["Petunjuk", "Opsional"],
+            music: ["Musik", "Bangun suasana"],
+            direction: ["Gaya cerita", "Pilih favoritmu"],
           } as const;
           const locked = stepState[step] === "locked";
           return (
             <button
               className={`studio-step studio-step--${stepState[step]} ${activeStep === step ? "is-current" : ""}`}
               disabled={locked || busy !== null}
+              aria-current={activeStep === step ? "step" : undefined}
               key={step}
               onClick={() => setActiveStep(step)}
               type="button"
@@ -514,10 +593,10 @@ export function SettingsStudio({
 
       {activeStep === "media" ? (
         <div className="studio-layout">
-          <main className="studio-main">
+          <div className="studio-main">
             <Surface className="studio-panel" tone="quiet">
               <div className="studio-panel__heading">
-                <div><p className="ui-eyebrow">STEP 1 · MEDIA</p><h2>Pilih media yang benar-benar masuk</h2><p>Video menjadi section sendiri. Semua foto pilihan digabung menjadi satu photo-slide section agar experience tidak terlalu panjang.</p></div>
+                <div><p className="ui-eyebrow">LANGKAH 1 · MOMEN</p><h2>Momen mana yang ingin kamu ceritakan?</h2><p>Pilih foto dan video favoritmu. Semua yang kamu pilih akan tampil dalam cerita.</p></div>
                 <strong>{selectedMedia.length}/{media.length}</strong>
               </div>
               <div className="studio-media-grid">
@@ -525,7 +604,7 @@ export function SettingsStudio({
                   const selected = selectedIds.has(item.id);
                   const url = previewUrlByMediaId[item.id];
                   return (
-                    <button className={`studio-media-choice ${selected ? "is-selected" : ""}`} key={item.id} onClick={() => toggleMedia(item)} type="button">
+                    <button className={`studio-media-choice ${selected ? "is-selected" : ""}`} aria-pressed={selected} key={item.id} onClick={() => toggleMedia(item)} type="button">
                       <div className="studio-media-choice__preview">
                         {url ? item.type === "photo" ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -533,7 +612,7 @@ export function SettingsStudio({
                         ) : <video muted playsInline preload="metadata" src={url} /> : <span>{item.type === "photo" ? <PhotoIcon size={22} /> : <VideoIcon size={22} />}</span>}
                         <i>{selected ? "✓" : "+"}</i>
                       </div>
-                      <div><strong>{item.originalFileName}</strong><span>{item.type === "video" ? `Video · ${formatDuration(item.durationSec ?? item.technicalSignals?.durationSec)}` : "Foto · masuk photo-slide"}</span></div>
+                      <div><strong>{item.originalFileName}</strong><span>{item.type === "video" ? `Video · ${formatDuration(item.durationSec ?? item.technicalSignals?.durationSec)}` : "Foto"}</span></div>
                     </button>
                   );
                 })}
@@ -541,39 +620,39 @@ export function SettingsStudio({
             </Surface>
 
             {selectedItems.length > 0 ? (
-              <Surface className="studio-panel" tone="quiet">
-                <div className="studio-panel__heading"><div><p className="ui-eyebrow">MEDIA SETTINGS</p><h2>Tuning sebelum Gemini</h2><p>Volume adalah volume foreground media. Saat video bersuara aktif, background music akan di-duck otomatis di Receiver.</p></div></div>
+              <details className="studio-panel workspace-panel studio-media-detail"><summary>Urutan & pengaturan media</summary>
+                <div className="studio-panel__heading"><div><p className="ui-eyebrow">DETAIL MEDIA</p><h2>Sesuaikan dengan caramu</h2><p>Atur urutan, tampilan, dan suara video. Musik akan melunak ketika suara video diputar.</p></div></div>
                 <div className="studio-selected-list">
                   {selectedItems.map(({ setting, media: item }, index) => (
                     <article className="studio-selected-media" key={item.id}>
-                      <div className="studio-selected-media__order"><strong>{index + 1}</strong><div><button disabled={index === 0} onClick={() => moveMedia(item.id, -1)} type="button">↑</button><button disabled={index === selectedItems.length - 1} onClick={() => moveMedia(item.id, 1)} type="button">↓</button></div></div>
-                      <div className="studio-selected-media__identity"><span>{item.type === "video" ? <VideoIcon size={15} /> : <PhotoIcon size={15} />}</span><div><strong>{item.originalFileName}</strong><small>{item.type === "video" ? "1 video section" : "Photo-slide member"}</small></div></div>
-                      <label className="studio-control"><span>Fit</span><select value={setting.fit} onChange={(event) => updateMediaSetting(item.id, { fit: event.target.value as "cover" | "contain" })}><option value="cover">Cover</option><option value="contain">Contain</option></select></label>
+                      <div className="studio-selected-media__order"><strong>{index + 1}</strong><div><button aria-label={`Pindah ${item.originalFileName} ke atas`} disabled={index === 0} onClick={() => moveMedia(item.id, -1)} type="button">↑</button><button aria-label={`Pindah ${item.originalFileName} ke bawah`} disabled={index === selectedItems.length - 1} onClick={() => moveMedia(item.id, 1)} type="button">↓</button></div></div>
+                      <div className="studio-selected-media__identity"><span>{item.type === "video" ? <VideoIcon size={15} /> : <PhotoIcon size={15} />}</span><div><strong>{item.originalFileName}</strong><small>{item.type === "video" ? "Video" : "Foto dalam album"}</small></div></div>
+                      <label className="studio-control"><span>Tampilan</span><select value={setting.fit} onChange={(event) => updateMediaSetting(item.id, { fit: event.target.value as "cover" | "contain" })}><option value="cover">Penuhi bingkai</option><option value="contain">Tampilkan utuh</option></select></label>
                       {item.type === "video" ? (
                         <>
                           <label className="studio-control studio-control--volume"><span>Volume media <b>{Math.round(setting.volume * 100)}%</b></span><input max="1" min="0" onChange={(event) => updateMediaSetting(item.id, { volume: Number(event.target.value) })} step="0.05" type="range" value={setting.volume} /></label>
-                          <label className="studio-control"><span>Trim in</span><input min="0" onChange={(event) => updateMediaSetting(item.id, { trimInSec: event.target.value ? Number(event.target.value) : null })} placeholder="0" step="0.1" type="number" value={setting.trimInSec ?? ""} /></label>
-                          <label className="studio-control"><span>Trim out</span><input min="0" onChange={(event) => updateMediaSetting(item.id, { trimOutSec: event.target.value ? Number(event.target.value) : null })} placeholder={formatDuration(item.durationSec ?? item.technicalSignals?.durationSec)} step="0.1" type="number" value={setting.trimOutSec ?? ""} /></label>
-                          <label className="studio-check"><input checked={setting.loop} onChange={(event) => updateMediaSetting(item.id, { loop: event.target.checked })} type="checkbox" /><span>Loop bila section lebih lama</span></label>
+                          <label className="studio-control"><span>Mulai (detik)</span><input min="0" onChange={(event) => updateMediaSetting(item.id, { trimInSec: event.target.value ? Number(event.target.value) : null })} placeholder="0" step="0.1" type="number" value={setting.trimInSec ?? ""} /></label>
+                          <label className="studio-control"><span>Akhir (detik)</span><input min="0" onChange={(event) => updateMediaSetting(item.id, { trimOutSec: event.target.value ? Number(event.target.value) : null })} placeholder={formatDuration(item.durationSec ?? item.technicalSignals?.durationSec)} step="0.1" type="number" value={setting.trimOutSec ?? ""} /></label>
+                          <label className="studio-check"><input checked={setting.loop} onChange={(event) => updateMediaSetting(item.id, { loop: event.target.checked })} type="checkbox" /><span>Putar ulang video</span></label>
                         </>
-                      ) : <span className="studio-photo-audio-note">Foto tidak punya foreground audio · music tetap full</span>}
+                      ) : <span className="studio-photo-audio-note">Musik mengiringi foto ini</span>}
                     </article>
                   ))}
                 </div>
-              </Surface>
+              </details>
             ) : null}
-          </main>
+          </div>
 
           <aside className="studio-side">
             <Surface className="studio-summary-card" tone="quiet">
-              <p className="ui-eyebrow">SECTION PLAN</p>
-              <div><strong>{selectedVideoCount}</strong><span>Video sections</span></div>
-              <div><strong>{selectedPhotoCount > 0 ? 1 : 0}</strong><span>Photo-slide section</span></div>
-              <div><strong>{selectedMedia.length > 0 ? 1 + selectedVideoCount + (selectedPhotoCount > 0 ? 1 : 0) : 0}</strong><span>Total termasuk Hero</span></div>
+              <p className="ui-eyebrow">MOMEN PILIHAN</p>
+              <div><strong>{selectedVideoCount}</strong><span>Video</span></div>
+              <div><strong>{selectedPhotoCount > 0 ? 1 : 0}</strong><span>Album foto</span></div>
+              <div><strong>{selectedMedia.length > 0 ? 1 + selectedVideoCount + (selectedPhotoCount > 0 ? 1 : 0) : 0}</strong><span>Bagian cerita</span></div>
             </Surface>
             <Surface className="studio-summary-card" tone="quiet">
-              <p className="ui-eyebrow">THEME</p>
-              <label className="studio-control"><span>Theme global</span><select onChange={(event) => changeTheme(event.target.value as ThemeId)} value={themeId}>{curatedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}</select></label>
+              <p className="ui-eyebrow">SUASANA</p>
+              <label className="studio-control"><span>Suasana cerita</span><select onChange={(event) => changeTheme(event.target.value as ThemeId)} value={themeId}>{curatedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}</select></label>
               <p>{curatedThemes.find((theme) => theme.id === themeId)?.description}</p>
             </Surface>
             <button className="ui-button ui-button--primary studio-continue" disabled={selectedMedia.length === 0 || busy !== null} onClick={saveMediaStep} type="button">{busy === "save-media" ? "Menyimpan..." : "Lanjut ke Story Anchors"}</button>
@@ -583,20 +662,20 @@ export function SettingsStudio({
 
       {activeStep === "anchors" ? (
         <Surface className="studio-panel studio-anchor-panel" tone="quiet">
-          <div className="studio-panel__heading"><div><p className="ui-eyebrow">STEP 2 · STORY ANCHORS</p><h2>Beri Gemini petunjuk momen penting</h2><p>Optional. Pilih lebih dari satu bila perlu. Media anchor yang analisisnya masih ambigu akan dicoba Deep Analysis sebelum Experience Director berjalan.</p></div></div>
+          <div className="studio-panel__heading"><div><p className="ui-eyebrow">LANGKAH 2 · PETUNJUK</p><h2>Tentukan momen yang paling berarti</h2><p>Bantu kami mengenali pembuka, puncak, dan penutup cerita. Kamu juga boleh melewati langkah ini.</p></div></div>
           <div className="studio-anchor-groups">
             {(["opening", "climax", "ending"] as const).map((role) => {
               const copy = {
-                opening: ["Opening", "Media mana yang cocok membuka cerita?"],
-                climax: ["Climax", "Momen mana yang paling penting atau berkesan?"],
-                ending: ["Ending", "Media mana yang ingin ditinggalkan sebagai kesan terakhir?"],
+                opening: ["Pembuka", "Media mana yang cocok membuka cerita?"],
+                climax: ["Puncak cerita", "Momen mana yang paling penting atau berkesan?"],
+                ending: ["Penutup", "Media mana yang ingin ditinggalkan sebagai kesan terakhir?"],
               } as const;
               return (
                 <section className="studio-anchor-group" key={role}>
                   <div><strong>{copy[role][0]}</strong><span>{copy[role][1]}</span><small>{anchors[role].length} dipilih</small></div>
                   <div className="studio-anchor-media-list">
                     {selectedItems.map(({ media: item }) => (
-                      <button className={anchors[role].includes(item.id) ? "is-selected" : ""} key={item.id} onClick={() => toggleAnchor(role, item.id)} type="button">
+                      <button className={anchors[role].includes(item.id) ? "is-selected" : ""} aria-pressed={anchors[role].includes(item.id)} key={item.id} onClick={() => toggleAnchor(role, item.id)} type="button">
                         <span>{item.type === "video" ? <VideoIcon size={14} /> : <PhotoIcon size={14} />}</span><strong>{item.originalFileName}</strong><i>{anchors[role].includes(item.id) ? "✓" : "+"}</i>
                       </button>
                     ))}
@@ -605,22 +684,22 @@ export function SettingsStudio({
               );
             })}
           </div>
-          <div className="studio-panel__actions"><button className="ui-button ui-button--ghost" disabled={busy !== null} onClick={() => saveAnchorStep(true)} type="button">Lanjut tanpa anchor</button><button className="ui-button ui-button--primary" disabled={busy !== null} onClick={() => saveAnchorStep(false)} type="button">{busy === "save-anchors" ? "Menyimpan..." : "Simpan Anchor & Lanjut"}</button></div>
+          <p className="studio-save-state">Boleh dikosongkan. Maksimal 8 momen untuk setiap bagian cerita.</p>
         </Surface>
       ) : null}
 
       {activeStep === "music" ? (
         <div className="studio-layout studio-layout--music">
-          <main className="studio-main">
+          <div className="studio-main">
             <Surface className="studio-panel" tone="quiet">
-              <div className="studio-panel__heading"><div><p className="ui-eyebrow">STEP 3 · BACKGROUND MUSIC</p><h2>Pilih template atau upload MP3</h2><p>Music adalah satu continuous timeline dari Hero sampai akhir. Saat video/audio bersuara aktif, hanya gain music yang turun; beat dan playback position tetap jalan.</p></div></div>
-              <h3 className="studio-subheading">Template Kenangin</h3>
+              <div className="studio-panel__heading"><div><p className="ui-eyebrow">LANGKAH 3 · MUSIK</p><h2>Musik yang membuatnya terasa dekat</h2><p>Dengarkan cuplikannya, lalu pilih lagu yang paling cocok. Musik mengiringi cerita dari awal sampai akhir.</p></div></div>
+              <h3 className="studio-subheading">Koleksi Kenangin</h3>
               <div className="studio-song-grid">
                 {compatibleSongs.map((song) => {
                   const selected = backgroundMusic?.source === "catalog" && backgroundMusic.songId === song.id;
                   return (
                     <article className={`studio-song-card ${selected ? "is-selected" : ""}`} key={song.id}>
-                      <button onClick={() => selectCatalogSong(song.id)} type="button"><i>{selected ? "✓" : "♪"}</i><div><strong>{song.name}</strong><span>{song.artist} · {Math.round(song.bpm)} BPM · {song.mood.join(" · ")}</span></div></button>
+                      <button aria-pressed={selected} onClick={() => selectCatalogSong(song.id)} type="button"><i>{selected ? "✓" : "♪"}</i><div><strong>{song.name}</strong><span>{song.artist} · {Math.round(song.bpm)} BPM · {song.mood.join(" · ")}</span></div></button>
                       {song.track.source === "public" ? <audio controls preload="none" src={song.track.publicPath} /> : null}
                     </article>
                   );
@@ -629,7 +708,7 @@ export function SettingsStudio({
             </Surface>
 
             <Surface className="studio-panel" tone="quiet">
-              <div className="studio-panel__heading studio-panel__heading--compact"><div><p className="ui-eyebrow">YOUR MUSIC</p><h2>Upload MP3 sendiri</h2><p>Upload dulu, lalu tombol Analyze memetakan hash, duration, BPM, beats, onset, energy curve, intro/build/peak/outro.</p></div><button className="ui-button ui-button--secondary" disabled={busy !== null} onClick={() => musicInputRef.current?.click()} type="button"><UploadIcon size={15} /> Pilih MP3</button></div>
+              <div className="studio-panel__heading studio-panel__heading--compact"><div><p className="ui-eyebrow">LAGU PILIHANMU</p><h2>Upload MP3 sendiri</h2><p>Punya lagu spesial? Unggah MP3 hingga 30 MB, lalu siapkan musiknya sebelum melanjutkan.</p></div><button className="ui-button ui-button--secondary" disabled={busy !== null} onClick={() => musicInputRef.current?.click()} type="button"><UploadIcon size={15} /> Pilih MP3</button></div>
               <input accept="audio/mpeg,.mp3" hidden onChange={(event) => setMusicFile(event.target.files?.[0] ?? null)} ref={musicInputRef} type="file" />
               {musicFile ? <div className="studio-music-upload"><div><strong>{musicFile.name}</strong><span>{formatBytes(musicFile.size)} · siap upload</span></div><button className="ui-button ui-button--primary" disabled={busy !== null} onClick={uploadMusic} type="button">{busy === "upload-music" ? "Uploading..." : "Upload MP3"}</button></div> : null}
               <div className="studio-room-music-list">
@@ -637,10 +716,10 @@ export function SettingsStudio({
                   const selected = backgroundMusic?.source === "room-upload" && backgroundMusic.musicId === item.id;
                   return (
                     <article className={`studio-room-music ${selected ? "is-selected" : ""}`} key={item.id}>
-                      <div className="studio-room-music__identity"><i>{selected ? "✓" : "♫"}</i><div><strong>{item.name}</strong><span>{formatBytes(item.sizeBytes)} · {item.analysis.status === "ready" ? `${Math.round(item.analysis.bpm ?? 0)} BPM · ${formatDuration(item.analysis.durationSec)}` : "Beatmap belum siap"}</span></div></div>
+                      <div className="studio-room-music__identity"><i>{selected ? "✓" : "♫"}</i><div><strong>{item.name}</strong><span>{formatBytes(item.sizeBytes)} · {item.analysis.status === "ready" ? `${Math.round(item.analysis.bpm ?? 0)} BPM · ${formatDuration(item.analysis.durationSec)}` : "Perlu disiapkan sebelum dipilih"}</span></div></div>
                       <div className="studio-room-music__actions">
                         {item.analysis.status === "ready" ? <button className="ui-button ui-button--ghost" onClick={() => setBackgroundMusic({ source: "room-upload", musicId: item.id })} type="button">{selected ? "Dipilih" : "Pilih"}</button> : null}
-                        <button className="ui-button ui-button--secondary" disabled={busy !== null} onClick={() => analyzeMusic(item)} type="button">{busy === "analyze-music" ? "Analyzing..." : item.analysis.status === "ready" ? "Analyze ulang" : "Analyze"}</button>
+                        <button className="ui-button ui-button--secondary" disabled={busy !== null} onClick={() => analyzeMusic(item)} type="button">{busy === "analyze-music" ? "Menyiapkan…" : item.analysis.status === "ready" ? "Siapkan ulang" : "Siapkan musik"}</button>
                       </div>
                       {item.analysis.status === "ready" ? <div className="studio-beatmap-mini"><span>{item.analysis.beats.length} beats</span><span>{item.analysis.onsets.length} onsets</span><span>{item.analysis.mood.join(" · ")}</span></div> : null}
                     </article>
@@ -648,9 +727,9 @@ export function SettingsStudio({
                 })}
               </div>
             </Surface>
-          </main>
+          </div>
           <aside className="studio-side">
-            <Surface className="studio-summary-card" tone="quiet"><p className="ui-eyebrow">AUDIO MIX RULE</p><div><strong>100%</strong><span>Beat timeline preserved</span></div><p>Foreground video volume mengikuti setting tiap media. Background music akan fade/duck lebih rendah dari foreground, lalu fade-in lagi di foto atau video tanpa audio.</p></Surface>
+            <Surface className="studio-summary-card" tone="quiet"><p className="ui-eyebrow">NYAMAN DIDENGAR</p><div><strong>100%</strong><span>Musik tetap mengalir</span></div><p>Suara video tetap jelas. Musik melunak saat video bersuara diputar, lalu kembali ketika kamu melanjutkan ke foto.</p></Surface>
             <button className="ui-button ui-button--primary studio-continue" disabled={!backgroundMusic || busy !== null} onClick={saveMusicStep} type="button">{busy === "save-music" ? "Menyimpan..." : "Lanjut ke Experience Director"}</button>
           </aside>
         </div>
@@ -659,33 +738,42 @@ export function SettingsStudio({
       {activeStep === "direction" ? (
         <div className="studio-direction-stage">
           <Surface className="studio-panel" tone="quiet">
-            <div className="studio-panel__heading"><div><p className="ui-eyebrow">STEP 4 · EXPERIENCE DIRECTOR</p><h2>Ubah pilihanmu menjadi ExperienceDNA</h2><p>Gemini hanya memilih vocabulary yang sudah tersedia: section tuning, role, Aura, transition, pacing, energy, beat alignment, wish placement, dan micro-copy. Semua output tetap divalidasi code.</p></div><button className="ui-button ui-button--primary" disabled={busy !== null || !studio.backgroundMusic} onClick={generateDirections} type="button">{busy === "generate" ? "Menyutradarai..." : studio.directionCandidates.length > 0 ? "Regenerate 3 Direction" : "Generate 3 Direction"}</button></div>
+            <div className="studio-panel__heading"><div><p className="ui-eyebrow">LANGKAH 4 · GAYA CERITA</p><h2>Satu cerita, tiga cara merasakannya</h2><p>Kami merangkai pilihanmu menjadi tiga gaya. Pilih yang paling terasa pas, lalu lihat urutan cerita di bawah.</p></div><button className="ui-button ui-button--primary" disabled={busy !== null || !studio.backgroundMusic} onClick={generateDirections} type="button">{busy === "generate" ? "Menyutradarai..." : studio.directionCandidates.length > 0 ? "Buat pilihan lain" : "Buat 3 gaya cerita"}</button></div>
             {studio.directionCandidates.length > 0 ? (
               <div className="studio-direction-grid">
                 {studio.directionCandidates.map((candidate) => {
                   const selected = studio.selectedDirectionId === candidate.id;
                   return (
                     <article className={`studio-direction-card ${selected ? "is-selected" : ""}`} key={candidate.id}>
-                      <div className="studio-direction-card__top"><span>{candidate.generationMode === "gemini" ? "Gemini" : "Fallback"}</span><i>{candidate.sections.length} sections</i></div>
+                      <div className="studio-direction-card__top"><span>{candidate.generationMode === "gemini" ? "Dirangkai untukmu" : "Gaya bawaan"}</span><i>{candidate.sections.length} bagian</i></div>
                       <h3>{candidate.name}</h3><p>{candidate.summary}</p>
                       <div className="studio-direction-card__arc">{candidate.storyArc.slice(0, 5).map((item) => <span key={item}>{item}</span>)}</div>
-                      <button className={selected ? "ui-button ui-button--secondary" : "ui-button ui-button--ghost"} disabled={busy !== null} onClick={() => chooseDirection(candidate.id)} type="button">{selected ? "Direction dipilih" : "Pilih Direction"}</button>
+                      <button className={selected ? "ui-button ui-button--secondary" : "ui-button ui-button--ghost"} disabled={busy !== null} onClick={() => chooseDirection(candidate.id)} type="button">{selected ? "✓ Gaya dipilih" : "Pilih gaya ini"}</button>
                     </article>
                   );
                 })}
               </div>
-            ) : <div className="studio-direction-empty"><strong>Belum ada ExperienceDNA.</strong><span>Generate akan mencoba Gemini lebih dulu; fallback deterministic baru dipakai setelah Director gagal/timeout dan tetap memasukkan seluruh media pilihan.</span></div>}
+            ) : <div className="studio-direction-empty"><strong>Ceritamu siap dirangkai.</strong><span>Tekan Buat 3 gaya cerita untuk mulai. Semua momen pilihanmu tetap disertakan.</span></div>}
           </Surface>
 
           {currentDirection ? <DirectionPreview direction={currentDirection} mediaById={mediaById} previewUrlByMediaId={previewUrlByMediaId} recipientName={recipientName} /> : null}
 
           <Surface className={`studio-bake-gate ${currentDirection ? "is-ready" : ""}`} tone="quiet">
-            <div><p className="ui-eyebrow">NEXT · BAKE</p><h2>{currentDirection ? "Direction final — siap dibangun" : "Pilih satu Direction untuk membuka Bake"}</h2><p>Bake menjalankan preflight deterministic, membuat snapshot Receiver, lalu mempublish token stabil. Gemini tidak dipanggil lagi pada tahap ini.</p></div>
-            <div className="studio-bake-gate__checks"><span className={selectedMedia.length > 0 ? "is-done" : ""}>✓ Media</span><span className={studio.backgroundMusic ? "is-done" : ""}>✓ Music</span><span className={currentDirection ? "is-done" : ""}>{currentDirection ? "✓" : "·"} ExperienceDNA</span></div>
+            <div><p className="ui-eyebrow">SELANGKAH LAGI</p><h2>{currentDirection ? "Ceritamu siap diterbitkan" : "Pilih gaya favoritmu dulu"}</h2><p>Langkah berikutnya memeriksa semua media dan menyiapkan tautan kejutan. Kamu bisa kembali mengubahnya kapan saja.</p></div>
+            <div className="studio-bake-gate__checks"><span className={selectedMedia.length > 0 ? "is-done" : ""}>✓ Media</span><span className={studio.backgroundMusic ? "is-done" : ""}>✓ Musik</span><span className={currentDirection ? "is-done" : ""}>{currentDirection ? "✓" : "·"} Gaya cerita</span></div>
             <button className="ui-button ui-button--primary studio-bake-gate__button" disabled={!currentDirection || busy !== null} onClick={() => router.push(`/rooms/${encodeURIComponent(roomId)}/bake`)} type="button">Mulai Bake</button>
           </Surface>
         </div>
       ) : null}
+
+      <div className="journey-actionbar">
+        <div className="journey-actionbar__copy"><strong>{({ media: "1 dari 4 · Pilih momen", anchors: "2 dari 4 · Petunjuk cerita", music: "3 dari 4 · Pilih musik", direction: "4 dari 4 · Pilih gaya cerita" })[activeStep]}</strong><small>{busy ? "Sedang memproses. Tunggu sebentar…" : activeStep === "anchors" ? "Langkah ini opsional. Lanjutkan dengan pilihan kosong bila ingin." : activeStep === "direction" ? "Pilih satu gaya di atas, lalu tinjau dan terbitkan." : "Pilihanmu disimpan saat melanjutkan."}</small></div>
+        <div className="journey-actionbar__buttons">
+          <button className="ui-button ui-button--ghost" disabled={busy !== null} onClick={() => { if (activeStep === "media") { if (dirty) { setExitTarget("/rooms/" + encodeURIComponent(roomId)); setExitOpen(true); } else router.push("/rooms/" + encodeURIComponent(roomId)); } else setActiveStep(activeStep === "anchors" ? "media" : activeStep === "music" ? "anchors" : "music"); }}>← {activeStep === "media" ? "Ke Room" : "Kembali"}</button>
+          <button className="ui-button ui-button--primary" disabled={busy !== null || (activeStep === "media" && !selectedMedia.length) || (activeStep === "music" && !backgroundMusic) || (activeStep === "direction" && (!currentDirection || dirty))} onClick={() => { if (activeStep === "media") void saveMediaStep(); else if (activeStep === "anchors") void saveAnchorStep(); else if (activeStep === "music") void saveMusicStep(); else router.push("/rooms/" + encodeURIComponent(roomId) + "/bake"); }}>{busy ? "Memproses…" : activeStep === "direction" ? "Tinjau & terbitkan →" : "Simpan & lanjut →"}</button>
+        </div>
+      </div>
+      <Dialog open={exitOpen} onClose={() => setExitOpen(false)} title="Simpan sebelum kembali?" busy={busy !== null}><p>Simpan perubahan ke Room agar bisa dilanjutkan dari perangkat lain.</p><div className="finish-secondary"><button className="ui-button ui-button--ghost" disabled={busy !== null} onClick={() => setExitOpen(false)}>Tetap di sini</button><button className="ui-button ui-button--primary" disabled={busy !== null || !selectedMedia.length} onClick={saveAndExit}>{busy ? "Menyimpan…" : "Simpan & kembali"}</button><button className="ui-button ui-button--ghost" disabled={busy !== null} onClick={() => { try { sessionStorage.removeItem(`kenangin-studio:${roomId}`); } catch {} router.push(exitTarget); }}>Buang perubahan & keluar</button></div></Dialog>
     </div>
   );
 }
@@ -703,11 +791,11 @@ function DirectionPreview({
 }) {
   return (
     <Surface className="studio-preview" tone="elevated">
-      <div className="studio-preview__heading"><div><p className="ui-eyebrow">DETERMINISTIC PREVIEW MAP</p><h2>{direction.name}</h2><p>Preview ini memeriksa execution plan per-section. Aura/transition renderer penuh baru dieksekusi Receiver Engine Patch 9.</p></div><span>{direction.generationMode}</span></div>
+      <div className="studio-preview__heading"><div><p className="ui-eyebrow">URUTAN CERITAMU</p><h2>{direction.name}</h2><p>Tinjau alurnya sebelum diterbitkan. Foto dan video di bawah mengikuti pilihanmu.</p></div><span>{direction.sections.length} bagian cerita</span></div>
       <div className="studio-preview__sections">
         {direction.sections.map((section, index) => (
           <article className={`studio-preview-section studio-preview-section--${section.type}`} key={section.id}>
-            <div className="studio-preview-section__index"><span>{index + 1}</span><small>{section.type}</small></div>
+            <div className="studio-preview-section__index"><span>{index + 1}</span><small>{section.type === "hero" ? "Pembuka" : section.type === "video" ? "Video" : "Album"}</small></div>
             <div className="studio-preview-section__visual">
               {section.type === "hero" ? <div className="studio-preview-hero"><small>Untuk</small><strong>{recipientName}</strong><span>{section.microCopy ?? "Sebuah kenangan yang dibuat bersama."}</span></div> : null}
               {section.type === "video" ? (() => {
@@ -724,7 +812,7 @@ function DirectionPreview({
                 ) : <span key={id}><PhotoIcon size={18} /></span>;
               })}</div> : null}
             </div>
-            <div className="studio-preview-section__tuning"><strong>{section.role ?? "hero"}</strong><span>{section.auraIds.join(" + ")}</span><span>{section.transitionInId}</span><span>{section.audioMix.mode}</span><span>{section.dwellSeconds.toFixed(1)}s · intensity {Math.round(section.intensity * 100)}%</span>{section.type === "video" ? <span>foreground volume {Math.round((section.mediaTreatment[0]?.volume ?? 1) * 100)}%</span> : null}</div>
+            <div className="studio-preview-section__tuning"><strong>{section.type === "hero" ? "Pembuka" : section.type === "video" ? "Momen bergerak" : "Album kenangan"}</strong><span>{section.mediaIds.length ? section.mediaIds.length + " media" : "Untuk " + recipientName}</span>{section.microCopy ? <p>{section.microCopy}</p> : null}</div>
           </article>
         ))}
       </div>

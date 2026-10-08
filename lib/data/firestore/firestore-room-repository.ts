@@ -1,4 +1,6 @@
 import "server-only";
+import { isDeepStrictEqual } from "node:util";
+import { ApiError } from "@/lib/http";
 
 import type { DocumentData } from "firebase-admin/firestore";
 import {
@@ -115,6 +117,8 @@ export class FirestoreRoomRepository implements RoomRepository {
         ...roomDocument,
         collectionDeadline: toTimestamp(room.collectionDeadline),
         config: null,
+        contributionCount: 0,
+        contributionBytes: 0,
         firstBakedAt: null,
         lastBakedAt: null,
         expiresAt: toTimestamp(room.expiresAt),
@@ -131,14 +135,22 @@ export class FirestoreRoomRepository implements RoomRepository {
     patch: UpdateRoomInput,
     updatedAt: string,
   ): Promise<void> {
-    await firestoreDb().collection("rooms").doc(id).update({
-      ...inputToFirestore(patch),
-      updatedAt: toTimestamp(updatedAt),
+    const db = firestoreDb();
+    const ref = db.collection("rooms").doc(id);
+    await db.runTransaction(async tx => {
+      const current = (await tx.get(ref)).data();
+      if (!current || current.config?._deleting) throw new ApiError("ROOM_CHANGED", "Room tidak tersedia untuk diubah.", 409);
+      tx.update(ref, { ...inputToFirestore(patch), updatedAt: toTimestamp(updatedAt) });
     });
   }
 
   async deleteRoom(id: string): Promise<void> {
-    await firestoreDb().collection("rooms").doc(id).delete();
+    const db = firestoreDb();
+    const room = db.collection("rooms").doc(id);
+    const snapshot = await room.get();
+    const receiverId = snapshot.data()?.receiverId;
+    if (receiverId) await db.recursiveDelete(db.collection("receivers").doc(receiverId));
+    await db.recursiveDelete(room);
   }
 
   async setPinned(
@@ -157,9 +169,14 @@ export class FirestoreRoomRepository implements RoomRepository {
     status: RoomStatus,
     updatedAt: string,
   ): Promise<void> {
-    await firestoreDb().collection("rooms").doc(id).update({
-      status,
-      updatedAt: toTimestamp(updatedAt),
+    const db = firestoreDb();
+    const ref = db.collection("rooms").doc(id);
+    await db.runTransaction(async tx => {
+      const snapshot = await tx.get(ref);
+      const current = snapshot.data();
+      const allowed = status === "closed" ? current?.status === "collecting" : status === "configuring" ? ["closed", "ready", "configuring"].includes(current?.status) : current?.status === status;
+      if (!current || current.config?._deleting || !allowed) throw new ApiError("ROOM_CHANGED", "Status Room berubah. Muat ulang untuk melanjutkan.", 409);
+      tx.update(ref, { status, updatedAt: toTimestamp(updatedAt) });
     });
   }
 
@@ -167,10 +184,18 @@ export class FirestoreRoomRepository implements RoomRepository {
     id: string,
     config: Room["config"],
     updatedAt: string,
+    expectedConfig?: Room["config"],
   ): Promise<void> {
-    await firestoreDb().collection("rooms").doc(id).update({
-      config,
-      updatedAt: toTimestamp(updatedAt),
+    const db = firestoreDb();
+    const ref = db.collection("rooms").doc(id);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      const current = snapshot.data();
+      if (!current || current.config?._deleting || current.status !== "configuring" || (expectedConfig !== undefined && !isDeepStrictEqual(current.config ?? null, expectedConfig))) {
+        throw new ApiError("STUDIO_CHANGED", "Studio berubah di tab lain. Muat ulang sebelum menyimpan kembali.", 409);
+      }
+      const studio = (config as { studio?: { themeId?: string } } | null)?.studio;
+      transaction.update(ref, { config, ...(studio?.themeId ? { themeId: studio.themeId } : {}), updatedAt: toTimestamp(updatedAt) });
     });
   }
 

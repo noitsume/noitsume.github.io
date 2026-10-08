@@ -10,6 +10,7 @@ export type PublishReceiverSnapshotInput = {
   manifest: ReceiverManifestDraft;
   assets: ReceiverAssetRecord[];
   bakedAt: string;
+  expectedStudioUpdatedAt: string;
 };
 
 export interface ReceiverRepository {

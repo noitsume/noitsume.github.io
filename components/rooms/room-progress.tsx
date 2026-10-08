@@ -1,17 +1,12 @@
 import type { RoomStatus } from "@/lib/data/contracts";
 import { Surface } from "@/components/ui";
+import { journeyStages } from "@/lib/domain/journey";
 
 export const ROOM_PROGRESS_STAGES: Array<{
   id: RoomStatus;
   label: string;
   description: string;
-}> = [
-  { id: "collecting", label: "Mengumpulkan", description: "Kiriman masuk" },
-  { id: "closed", label: "Ditutup", description: "Collector terkunci" },
-  { id: "configuring", label: "Mengatur", description: "Settings Studio" },
-  { id: "baking", label: "Bake", description: "Building page" },
-  { id: "ready", label: "Selesai", description: "Preview + link" },
-];
+}> = [...journeyStages];
 
 export function roomProgressLabel(status: RoomStatus) {
   return ROOM_PROGRESS_STAGES.find((stage) => stage.id === status)?.label ?? status;
@@ -26,7 +21,7 @@ export function RoomProgress({ status }: { status: RoomStatus }) {
         {ROOM_PROGRESS_STAGES.map((stage, index) => {
           const state = index < activeStageIndex ? "done" : index === activeStageIndex ? "active" : "upcoming";
           return (
-            <div className={`room-lifecycle__segment room-lifecycle__segment--${state}`} key={stage.id}>
+            <div className={`room-lifecycle__segment room-lifecycle__segment--${state}`} key={stage.id} aria-current={state === "active" ? "step" : undefined}>
               <div className="room-lifecycle__step">
                 <span className="room-lifecycle__dot">{state === "done" ? "✓" : index + 1}</span>
                 <div><strong>{stage.label}</strong><small>{stage.description}</small></div>

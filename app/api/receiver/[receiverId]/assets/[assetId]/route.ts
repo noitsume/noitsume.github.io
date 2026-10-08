@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       ? new URL(resolved.path, request.url)
       : new URL(resolved.url);
     const response = NextResponse.redirect(target, 307);
-    response.headers.set("cache-control", "public, max-age=60, stale-while-revalidate=120");
+    response.headers.set("cache-control", "private, no-store");
     response.headers.set("x-kenangin-asset", assetId);
     return response;
   } catch (error) {

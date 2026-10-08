@@ -55,13 +55,14 @@ export const receiverMediaDescriptorSchema = z.object({
   width: z.number().int().positive().nullable(),
   height: z.number().int().positive().nullable(),
   durationSec: z.number().nonnegative().nullable(),
+  audioPresence: z.enum(["present", "absent", "unknown"]).default("unknown"),
   contributorName: z.string().nullable(),
   originalFileName: z.string().min(1),
 });
 
 export const receiverWishSchema = z.object({
   id: z.string().min(1),
-  text: z.string().trim().min(1).max(2000),
+  text: z.string().trim().min(1).max(3000),
   contributorName: z.string().nullable(),
 });
 

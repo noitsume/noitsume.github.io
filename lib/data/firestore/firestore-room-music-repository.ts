@@ -1,3 +1,4 @@
+import { ApiError } from "@/lib/http";
 import "server-only";
 
 import type { DocumentData } from "firebase-admin/firestore";
@@ -67,6 +68,8 @@ export class FirestoreRoomMusicRepository implements RoomMusicRepository {
       .doc(item.id);
 
     return firestoreDb().runTransaction(async (transaction) => {
+      const parent = await transaction.get(firestoreDb().collection("rooms").doc(item.roomId));
+      if (!parent.exists || parent.data()?.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sudah tidak tersedia.", 409);
       const snapshot = await transaction.get(ref);
       if (snapshot.exists) return "exists" as const;
       transaction.create(ref, documentFromRoomMusic(item));

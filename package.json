@@ -19,7 +19,9 @@
     "seed:dev": "node --env-file=.env.local scripts/seed-dev.mjs",
     "b2:cors": "node --env-file=.env.local scripts/configure-b2-cors.mjs",
     "infra:check": "node --env-file=.env.local scripts/infra-check.mjs",
-    "songs:analyze": "python3 tools/song-analysis/analyze.py public/creative/songs"
+    "songs:analyze": "python3 tools/song-analysis/analyze.py public/creative/songs",
+    "maintenance:dry-run": "node --env-file=.env.local scripts/maintenance.mjs",
+    "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1095.0",

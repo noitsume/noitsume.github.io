@@ -1,3 +1,4 @@
+import { consumeRateLimit, publicRequestKey, readBoundedJson } from "@/lib/http/rate-limit";
 import type { NextRequest } from "next/server";
 import { assertSameOrigin } from "@/lib/auth/csrf";
 import {
@@ -16,7 +17,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     assertSameOrigin(request);
     const { collectorId } = await context.params;
-    const input = collectorSubmitRequestSchema.parse(await request.json());
+    await consumeRateLimit(publicRequestKey(request, "collector:submit:" + collectorId), 30, 60 * 60 * 1000);
+    const input = collectorSubmitRequestSchema.parse(await readBoundedJson(request, 6291456));
     const result = await commitCollectorSubmission(collectorId, input);
     return apiOk(
       { submissionId: result.submission.id, mediaCount: result.submission.stagedMedia.length },

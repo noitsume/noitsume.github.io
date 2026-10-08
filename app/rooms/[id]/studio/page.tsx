@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shell";
 import { RoomProgress } from "@/components/rooms";
 import { SettingsStudio } from "@/components/studio";
-import { ArrowRightIcon, Badge } from "@/components/ui";
+import { PageHeading } from "@/components/ui/page-heading";
 import { getOwnerShellUser } from "@/lib/auth/owner-data";
 import { getOwnerSession } from "@/lib/auth/session";
 import { getOwnedWorkspaceMedia } from "@/lib/collector";
@@ -54,24 +53,9 @@ export default async function RoomStudioPage({ params }: PageProps) {
   const studio = getRoomStudioConfig(room);
 
   return (
-    <AppShell user={user}>
+    <AppShell user={user} hideSidebar>
       <div className="room-page room-workspace studio-page">
-        <div className="room-page__breadcrumb">
-          <Link href="/dashboard">Dashboard</Link>
-          <ArrowRightIcon size={13} />
-          <Link href={`/rooms/${room.id}`}>{room.title}</Link>
-          <ArrowRightIcon size={13} />
-          <span>Settings Studio</span>
-        </div>
-
-        <header className="room-workspace-header studio-page__header">
-          <div className="room-workspace-header__copy">
-            <div className="room-workspace-header__kicker"><span>Settings Studio</span><span aria-hidden="true">•</span><span>{inventoryMedia.length} media inventori</span></div>
-            <div className="room-workspace-header__title-row"><h1>Susun experience {room.recipientName}</h1><Badge className="room-lifecycle-badge room-lifecycle-badge--configuring">Mengatur</Badge></div>
-            <p>Pilih apa yang masuk, beri guidance bila perlu, siapkan musik, lalu biarkan Experience Director menyusun tuning tiap section.</p>
-          </div>
-          <div className="room-workspace-header__actions"><Link className="ui-button ui-button--ghost" href={`/rooms/${room.id}`}>Kembali ke Workspace</Link></div>
-        </header>
+        <PageHeading eyebrow="STUDIO CERITA" title={"Rangkai cerita " + room.recipientName} description="Pilih momennya, temukan suasananya. Kami bantu menyatukan semuanya." backHref={"/rooms/" + room.id} backLabel={room.title} />
 
         <RoomProgress status={room.status} />
 

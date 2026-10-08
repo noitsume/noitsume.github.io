@@ -19,7 +19,9 @@ function isoToLocalInput(iso: string) {
 }
 
 function localInputToIso(value: string) {
-  return new Date(value).toISOString();
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new Error("Pilih tanggal dan jam batas pengumpulan, atau gunakan pilihan cepat di bawahnya.");
+  return date.toISOString();
 }
 
 export function RoomForm({
@@ -27,11 +29,13 @@ export function RoomForm({
   themes,
   room,
   onCancel,
+  onBusyChange,
 }: {
   mode: "create" | "edit";
   themes: Theme[];
   room?: Room;
   onCancel?: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(room?.title ?? "");
@@ -50,19 +54,21 @@ export function RoomForm({
   );
 
   const themeOptions = useMemo<SelectOption[]>(
-    () => themes.map((theme) => ({ value: theme.id, label: theme.name, description: `${theme.themePersonality.slice(0, 3).join(" · ")} · ${theme.motionPersonality}` })),
+    () => themes.map((theme) => ({ value: theme.id, label: theme.name, description: theme.description })),
     [themes],
   );
 
   function handleCancel() {
     if (busy) return;
     if (onCancel) onCancel();
-    else router.back();
+    else router.push(room ? `/rooms/${room.id}` : "/dashboard");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setBusy(true);
+    onBusyChange?.(true);
     setError(null);
 
     try {
@@ -107,12 +113,13 @@ export function RoomForm({
       );
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
     }
   }
 
   return (
     <form className="room-form" onSubmit={submit}>
-      <div className="room-form__grid">
+      <fieldset className="room-form__grid" disabled={busy}>
         <label className="form-field room-form__wide">
           <span>Nama Room</span>
           <input
@@ -122,7 +129,7 @@ export function RoomForm({
             required
             value={title}
           />
-          <small>Nama internal workspace. Bisa kamu ubah kapan saja.</small>
+          <small>Nama untuk memudahkan kamu menemukan kenangan ini nanti.</small>
         </label>
 
         <label className="form-field">
@@ -156,20 +163,21 @@ export function RoomForm({
             disabled={themes.length === 0}
             placeholder="Pilih tema"
           />
-          <small>{selectedTheme ? `${selectedTheme.name} · ${selectedTheme.themePersonality.join(" · ")}` : "Pilih tema"}</small>
+          <small>{selectedTheme?.description ?? "Pilih tema"}</small>
         </div>
 
-        <label className="form-field">
-          <span>Deadline collecting</span>
-          <input
+        <div className="form-field">
+          <label htmlFor="room-deadline">Batas pengumpulan</label>
+          <input id="room-deadline"
             onChange={(event) => setDeadline(event.target.value)}
             required
             type="datetime-local"
             value={deadline}
           />
-          <small>Setelah waktu ini, Collector nanti tidak menerima submission baru.</small>
-        </label>
-      </div>
+          <small>Waktu lokal perangkatmu. Kiriman baru ditutup setelah batas ini.</small>
+          <div className="deadline-shortcuts">{[1, 3, 7].map(days => <button className="ui-button ui-button--ghost" type="button" key={days} onClick={() => { setDeadline(isoToLocalInput(new Date(Date.now() + days * 86400000).toISOString())); setError(null); }}>{days === 1 ? "Besok" : days + " hari lagi"}</button>)}</div>
+        </div>
+      </fieldset>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
 

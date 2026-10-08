@@ -52,14 +52,14 @@ export default async function CollectorPage({ params }: PageProps) {
 
       <main className="collector-layout">
         <section className="collector-intro">
-          <p className="ui-eyebrow">COLLECTOR ROOM</p>
+          <p className="ui-eyebrow">KEJUTAN BERSAMA</p>
           <h1>Simpan satu momen untuk <span>{room.recipientName}</span>.</h1>
           <p>Kamu sedang ikut menyiapkan kenangan untuk {occasionLabel(room.occasionId)} {room.recipientName}. Tulis ucapan, kirim foto, video, atau gabungkan semuanya.</p>
           <div className="collector-intro__deadline">
             <span><CalendarIcon size={17} /></span>
             <div><small>Batas pengumpulan</small><strong>{formatDeadline(room.collectionDeadline)}</strong></div>
           </div>
-          <div className="collector-intro__privacy"><LockIcon size={15} /><span>Media disimpan privat dan hanya dapat direview oleh owner Room.</span></div>
+          <div className="collector-intro__privacy"><LockIcon size={15} /><span>Pembuat Room meninjau kirimanmu sebelum cerita dibagikan kepada penerima.</span></div>
         </section>
 
         <section className="collector-card">

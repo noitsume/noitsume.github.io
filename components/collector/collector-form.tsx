@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   COLLECTOR_ACCEPT,
   COLLECTOR_MAX_FILES,
@@ -29,6 +29,7 @@ function formatBytes(bytes: number) {
 
 function validateFiles(files: File[]) {
   if (files.length > COLLECTOR_MAX_FILES) return `Maksimal ${COLLECTOR_MAX_FILES} file per submission.`;
+  if (files.reduce((total, file) => total + file.size, 0) > 600 * 1024 ** 2) return "Total file maksimal 600 MB. Kurangi beberapa file dulu.";
   for (const file of files) {
     const rule = collectorMediaRules[file.type as keyof typeof collectorMediaRules];
     if (!rule) return `${file.name}: format belum didukung.`;
@@ -39,6 +40,9 @@ function validateFiles(files: File[]) {
 }
 
 export function CollectorForm({ collectorId, recipientName }: { collectorId: string; recipientName: string }) {
+  const retryBody = useRef<string | null>(null);
+  const textSubmissionId = useRef<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const submitInFlightRef = useRef(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -50,8 +54,29 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
 
   const busy = phase === "processing" || phase === "preparing" || phase === "uploading" || phase === "saving";
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("collector-draft:" + collectorId);
+      const saved = raw ? JSON.parse(raw) : null;
+      queueMicrotask(() => {
+        if (saved && typeof saved.name === "string" && typeof saved.message === "string") { setName(saved.name.slice(0,80)); setMessage(saved.message.slice(0,3000)); }
+        setDraftReady(true);
+      });
+    } catch { queueMicrotask(() => setDraftReady(true)); }
+  }, [collectorId]);
+  useEffect(() => {
+    if (!draftReady) return;
+    try { if (phase === "done") sessionStorage.removeItem("collector-draft:" + collectorId); else sessionStorage.setItem("collector-draft:" + collectorId, JSON.stringify({ name, message })); } catch { /* Text stays in memory when storage is unavailable. */ }
+  }, [collectorId, draftReady, name, message, phase]);
+  useEffect(() => {
+    if (!busy && !files.length) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
+  }, [busy, files.length]);
+  function clearRetry() { retryBody.current = null; textSubmissionId.current = null; }
   function addFiles(selected: File[]) {
-    const next = [...files, ...selected].slice(0, COLLECTOR_MAX_FILES);
+    clearRetry();
+    const next = [...files, ...selected];
     const validation = validateFiles(next);
     if (validation) {
       setError(validation);
@@ -79,11 +104,12 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
 
     submitInFlightRef.current = true;
     try {
-      let submissionId: string | undefined;
+      textSubmissionId.current ??= "submission_" + crypto.randomUUID().replaceAll("-", "");
+      let submissionId: string | undefined = textSubmissionId.current;
       let uploads: PreparedUpload[] = [];
       const analysisInputs: Array<MediaAnalysisInput | undefined> = [];
 
-      if (files.length > 0) {
+      if (files.length > 0 && !retryBody.current) {
         setPhase("processing");
         setProgress(0);
         for (let index = 0; index < files.length; index += 1) {
@@ -134,30 +160,19 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
       }
 
       setPhase("saving");
+      retryBody.current ??= JSON.stringify({ submissionId, contributorName: name.trim() || null, message: message.trim() || null, media: uploads.map((upload, index) => ({ id: upload.mediaId, objectKey: upload.objectKey, originalFileName: upload.originalFileName, contentType: upload.contentType, sizeBytes: upload.sizeBytes, type: upload.type, analysis: analysisInputs[index] })) });
       const submitResponse = await fetch(`/api/collector/${encodeURIComponent(collectorId)}/submit`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({
-          submissionId,
-          contributorName: name.trim() || null,
-          message: message.trim() || null,
-          media: uploads.map((upload, index) => ({
-            id: upload.mediaId,
-            objectKey: upload.objectKey,
-            originalFileName: upload.originalFileName,
-            contentType: upload.contentType,
-            sizeBytes: upload.sizeBytes,
-            type: upload.type,
-            analysis: analysisInputs[index],
-          })),
-        }),
+        body: retryBody.current,
       });
       const submitPayload = await submitResponse.json();
       if (!submitResponse.ok || !submitPayload?.ok) {
         throw new Error(submitPayload?.error?.message ?? "Ucapan belum berhasil disimpan.");
       }
 
+      clearRetry();
       setFiles([]);
       setMessage("");
       setProgress(0);
@@ -177,7 +192,7 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
         <span className="collector-success__icon"><CheckIcon size={28} /></span>
         <p className="ui-eyebrow">TERKIRIM</p>
         <h2>Kenanganmu sudah masuk.</h2>
-        <p>Terima kasih sudah ikut menyiapkan sesuatu untuk {recipientName}. Owner Room akan mereview kirimanmu.</p>
+        <p>Terima kasih sudah ikut menyiapkan sesuatu untuk {recipientName}. Pembuat kejutan akan memilih kirimanmu sebelum ditampilkan.</p>
         <button className="ui-button ui-button--secondary" type="button" onClick={() => setPhase("idle")}>Kirim kenangan lain</button>
       </div>
     );
@@ -185,12 +200,13 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
 
   return (
     <form className="collector-form" onSubmit={submit}>
+      <p className="collector-draft-note">Ucapan tersimpan sementara di tab ini. File perlu dipilih ulang jika halaman dimuat ulang.</p>
       <label className="form-field">
         <span>Namamu <small>opsional</small></span>
         <input
           autoComplete="name"
           maxLength={80}
-          onChange={(event) => setName(event.target.value)}
+          disabled={busy} onChange={(event) => { clearRetry(); setName(event.target.value); }}
           placeholder="Contoh: Dimas"
           value={name}
         />
@@ -200,7 +216,7 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
         <span>Ucapan untuk {recipientName} <small>opsional jika ada media</small></span>
         <textarea
           maxLength={3000}
-          onChange={(event) => setMessage(event.target.value)}
+          disabled={busy} onChange={(event) => { clearRetry(); setMessage(event.target.value); }}
           placeholder="Tulis sesuatu yang ingin kamu sampaikan..."
           rows={5}
           value={message}
@@ -245,7 +261,7 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
                 <button
                   aria-label={`Hapus ${file.name}`}
                   disabled={busy}
-                  onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                  onClick={() => { clearRetry(); setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index)); }}
                   type="button"
                 ><CloseIcon size={16} /></button>
               </li>
@@ -264,9 +280,9 @@ export function CollectorForm({ collectorId, recipientName }: { collectorId: str
       {error ? <p className="form-error" role="alert">{error}</p> : null}
 
       <button className="ui-button ui-button--primary collector-form__submit" disabled={busy} type="submit">
-        {busy ? "Sedang mengirim..." : "Kirim untuk Kenangin"}
+        {busy ? "Sedang mengirim..." : `Kirim untuk ${recipientName}`}
       </button>
-      <p className="collector-form__privacy">Original media dikirim langsung ke penyimpanan privat Kenangin. Browser hanya membuat proxy kecil untuk memahami suasana media; kiriman tetap valid walau analisis AI gagal.</p>
+      <p className="collector-form__privacy">Kirim hanya foto, video, dan ucapan yang boleh kamu bagikan. Pembuat Room memilih kiriman sebelum diterbitkan. Setelah terbit, orang dengan tautan kejutan dapat melihatnya.</p>
     </form>
   );
 }

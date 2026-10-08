@@ -1,5 +1,6 @@
 "use client";
 
+import { journeyLabel, roomDestination } from "@/lib/domain/journey";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -30,11 +31,11 @@ function formatDateLabel(value: string) {
 function statusLabel(status: DashboardRoomStatus) {
   switch (status) {
     case "waiting":
-      return "Waiting";
+      return "Disiapkan";
     case "working":
-      return "On Working";
+      return "Diterbitkan";
     case "ended":
-      return "Ended";
+      return "Berakhir";
   }
 }
 
@@ -71,7 +72,7 @@ function DashboardRoomCard({
       <div className="dashboard-room-card__cover">
         <Badge className={`dashboard-room-card__status ${statusBadgeClass(derived)}`}>
           <span className="dashboard-room-card__status-dot" aria-hidden="true" />
-          {statusLabel(derived)}
+          {derived === "ended" ? statusLabel(derived) : journeyLabel(room.status)}
         </Badge>
 
         <button
@@ -102,8 +103,8 @@ function DashboardRoomCard({
         </div>
 
         <div className="dashboard-room-card__actions">
-          <Link className="ui-button ui-button--secondary dashboard-room-card__open" href={`/rooms/${room.id}`}>
-            Lihat Room
+          <Link className="ui-button ui-button--secondary dashboard-room-card__open" href={roomDestination(room).href}>
+            {roomDestination(room).label}
           </Link>
           <details className="dashboard-room-menu" data-busy={busy ? "true" : "false"}>
             <summary className="dashboard-room-card__more" aria-label={`Buka menu ${room.title}`}>
@@ -154,17 +155,19 @@ function DashboardRoomSectionsState({
 }: DashboardRoomSectionsProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const [query, setQuery] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [rooms, setRooms] = useState(initialRooms);
   const [busyRoomIds, setBusyRoomIds] = useState<Set<string>>(() => new Set());
 
   const pinnedRooms = useMemo(
-    () => rooms.filter((room) => room.isPinned),
-    [rooms],
+    () => rooms.filter((room) => room.isPinned && (room.title + " " + room.recipientName).toLocaleLowerCase("id").includes(query.toLocaleLowerCase("id"))),
+    [rooms, query],
   );
 
   const activeRooms = useMemo(
-    () => rooms.filter((room) => !room.isPinned && getDashboardRoomStatus(room) !== "ended"),
-    [rooms],
+    () => rooms.filter((room) => !room.isPinned && (room.title + " " + room.recipientName).toLocaleLowerCase("id").includes(query.toLocaleLowerCase("id"))),
+    [rooms, query],
   );
 
   async function togglePinned(room: Room) {
@@ -202,7 +205,7 @@ function DashboardRoomSectionsState({
         router.refresh();
       });
     } catch (error) {
-      console.error(error);
+      setFeedback(error instanceof Error ? error.message : "Perubahan belum tersimpan.");
       setRooms((current) =>
         current.map((item) =>
           item.id === room.id ? { ...item, isPinned: room.isPinned } : item,
@@ -256,11 +259,13 @@ function DashboardRoomSectionsState({
   }
   return (
     <>
-      <section className="dashboard-section" aria-labelledby="pinned-heading">
+      {feedback ? <p role="alert" className="form-error">{feedback}</p> : null}
+      <label className="dashboard-search"><input type="search" aria-label="Cari kenangan" placeholder="Cari judul atau nama penerima…" value={query} onChange={event => setQuery(event.target.value)} /><span>{pinnedRooms.length + activeRooms.length} kenangan</span></label>
+      {pinnedRooms.length > 0 ? <section className="dashboard-section" aria-labelledby="pinned-heading">
         <SectionHeader
           eyebrow="PILIHAN CEPAT"
           icon={<PinIcon size={16} />}
-          title="Pinned"
+          title="Disematkan"
           headingId="pinned-heading"
           action={<span className="section-note">{pinnedRooms.length} Room disematkan</span>}
         />
@@ -282,15 +287,16 @@ function DashboardRoomSectionsState({
             Belum ada Room yang disematkan. Pin Room penting agar muncul di sini.
           </Surface>
         )}
-      </section>
+      </section> : null}
 
       <section className="dashboard-section" aria-labelledby="active-heading">
         <SectionHeader
           eyebrow="WORKSPACE"
-          title="Room Aktif"
+          title="Semua kenangan"
           headingId="active-heading"
           action={<RoomSortSelect value={sortMode} />}
         />
+        {query && !activeRooms.length && !pinnedRooms.length ? <p className="dashboard-empty-copy">Belum ada kenangan yang cocok. Coba judul atau nama lain.</p> : null}
         <div className="active-rooms-row dashboard-room-grid">
           <CreateRoomLauncher themes={themes} initialOpen={initialCreateOpen} />
           {activeRooms.map((room) => (

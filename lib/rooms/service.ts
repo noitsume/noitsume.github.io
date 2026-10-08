@@ -1,3 +1,4 @@
+import { firestoreDb, toTimestamp } from "@/lib/data/firestore/shared";
 import "server-only";
 
 import { roomSchema, type Room, type UpdateRoomInput } from "@/lib/data/contracts";
@@ -17,6 +18,8 @@ export async function getOwnedRoom(ownerUid: string, roomId: string) {
   if (room.ownerUid !== ownerUid) {
     throw new ApiError("ROOM_FORBIDDEN", "Kamu tidak memiliki akses ke Room ini.", 403);
   }
+
+  if (room.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sedang dihapus. Coba hapus kembali dari Kenangan saya jika proses sebelumnya terputus.", 409);
 
   if (room.status === "collecting" && Date.parse(room.collectionDeadline) <= Date.now()) {
     const updatedAt = new Date().toISOString();
@@ -44,11 +47,15 @@ export async function updateOwnedRoom(
 }
 
 export async function deleteOwnedRoom(ownerUid: string, roomId: string) {
-  await getOwnedRoom(ownerUid, roomId);
-  const [submissions, media] = await Promise.all([
-    backendRepositories.submissions.listByRoom(roomId),
-    backendRepositories.media.listByRoom(roomId),
-  ]);
+  const db = firestoreDb();
+  const ref = db.collection("rooms").doc(roomId);
+  await db.runTransaction(async tx => {
+    const snapshot = await tx.get(ref);
+    const room = snapshot.data();
+    if (!room) throw new ApiError("ROOM_NOT_FOUND", "Room tidak ditemukan.", 404);
+    if (room.ownerUid !== ownerUid) throw new ApiError("ROOM_FORBIDDEN", "Room bukan milikmu.", 403);
+    tx.update(ref, { config: { ...(room.config ?? {}), _deleting: true }, updatedAt: toTimestamp(new Date().toISOString()) });
+  });
 
   // Storage cleanup is a hard precondition for deleting Room metadata.
   // Purge the whole Room prefix rather than trusting Firestore as the complete
@@ -60,15 +67,11 @@ export async function deleteOwnedRoom(ownerUid: string, roomId: string) {
     console.error(`[room-delete] B2 cleanup failed for ${roomId}`, error);
     throw new ApiError(
       "ROOM_STORAGE_CLEANUP_FAILED",
-      "Media Room belum berhasil dibersihkan dari storage. Room tidak dihapus; coba lagi setelah koneksi/izin B2 normal.",
+      "Penghapusan media belum selesai. Tautan Room sudah dinonaktifkan; pilih Hapus Room lagi untuk melanjutkan pembersihan.",
       503,
     );
   }
 
-  await backendRepositories.media.deleteMany(roomId, media.map((item) => item.id));
-  for (const submission of submissions) {
-    await backendRepositories.submissions.deleteSubmission(roomId, submission.id);
-  }
   await backendRepositories.rooms.deleteRoom(roomId);
 }
 

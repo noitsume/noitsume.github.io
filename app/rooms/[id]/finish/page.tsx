@@ -31,5 +31,5 @@ export default async function FinishPage({ params }: PageProps) {
   const path = `/r/${room.receiverId}`;
   const receiverUrl = host ? `${protocol}://${host}${path}` : path;
 
-  return <AppShell user={user}><div className="room-page room-workspace receiver-finish-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Selesai</span></div><RoomProgress status={room.status} /><ReceiverFinishCard receiverId={room.receiverId} receiverUrl={receiverUrl} revision={manifest.revision} roomId={room.id} /></div></AppShell>;
+  return <AppShell user={user} hideSidebar><div className="room-page room-workspace receiver-finish-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Selesai</span></div><RoomProgress status={room.status} /><ReceiverFinishCard receiverUrl={receiverUrl} revision={manifest.revision} roomId={room.id} /></div></AppShell>;
 }

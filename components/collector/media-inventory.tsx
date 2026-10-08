@@ -190,7 +190,7 @@ export function MediaInventoryDialog({
       if (fileInputRef.current) fileInputRef.current.value = "";
       setSuccess(`${uploads.length} media ditambahkan ke inventori dan otomatis approved.`);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Upload owner gagal.");
+      setError(uploadError instanceof Error ? uploadError.message : "Dari kamu gagal.");
     } finally {
       setPhase("idle");
       uploadInFlightRef.current = false;
@@ -249,9 +249,9 @@ export function MediaInventoryDialog({
     >
       <div className="media-inventory__header">
         <div>
-          <p className="ui-eyebrow">MEDIA INVENTORY</p>
-          <h2 id="media-inventory-title">Inventori media Room</h2>
-          <p>Berisi media contributor yang sudah di-approve dan semua media yang kamu upload sendiri.</p>
+          <p className="ui-eyebrow">MOMEN TERKUMPUL</p>
+          <h2 id="media-inventory-title">Foto & video pilihan</h2>
+          <p>Kiriman yang sudah kamu terima dan media yang kamu tambahkan sendiri.</p>
         </div>
         <button aria-label="Tutup inventori" className="media-inventory__close" disabled={busy} onClick={onClose} type="button"><CloseIcon size={18} /></button>
       </div>
@@ -261,7 +261,7 @@ export function MediaInventoryDialog({
           <div className="owner-upload-panel__heading">
             <div>
               <strong>Tambah media milikmu</strong>
-              <span>Upload owner langsung masuk inventori sebagai approved.</span>
+              <span>Foto dan video yang kamu tambahkan langsung tersedia di Studio.</span>
             </div>
             <button className="ui-button ui-button--secondary" disabled={busy} onClick={() => fileInputRef.current?.click()} type="button"><UploadIcon size={15} /> <span>Pilih Media</span></button>
           </div>
@@ -295,16 +295,16 @@ export function MediaInventoryDialog({
 
         <div className="media-inventory__summary">
           <div><strong>{media.length}</strong><span>Total media</span></div>
-          <div><strong>{intelligenceReadyCount}</strong><span>AI ready</span></div>
-          <div><strong>{intelligenceFallbackCount}</strong><span>Perlu analisis</span></div>
-          <div><strong>{ownerCount}</strong><span>Upload owner</span></div>
+          <div><strong>{intelligenceReadyCount}</strong><span>Petunjuk siap</span></div>
+          <div><strong>{intelligenceFallbackCount}</strong><span>Petunjuk opsional</span></div>
+          <div><strong>{ownerCount}</strong><span>Dari kamu</span></div>
         </div>
 
         {media.length === 0 ? (
           <div className="media-inventory__empty">
             <span><PhotoIcon size={24} /></span>
-            <strong>Inventori masih kosong.</strong>
-            <p>Approve kiriman contributor atau upload media milikmu sendiri.</p>
+            <strong>Belum ada media pilihan.</strong>
+            <p>Terima kiriman teman atau tambahkan foto dan videomu sendiri.</p>
           </div>
         ) : (
           <div className="media-inventory__grid">
@@ -321,17 +321,17 @@ export function MediaInventoryDialog({
                     ) : (
                       <span className="media-inventory-card__loading">{item.type === "photo" ? <PhotoIcon size={20} /> : <VideoIcon size={20} />}<small>Menyiapkan preview...</small></span>
                     )}
-                    <span className={`media-inventory-card__source media-inventory-card__source--${item.source}`}>{item.source === "owner" ? "Owner" : "Contributor"}</span>
+                    <span className={`media-inventory-card__source media-inventory-card__source--${item.source}`}>{item.source === "owner" ? "Dari kamu" : "Dari teman"}</span>
                   </div>
                   <div className="media-inventory-card__meta">
                     <div className="media-inventory-card__title-row">
                       <strong title={item.originalFileName}>{item.originalFileName}</strong>
-                      <span className={`media-ai-status media-ai-status--${item.analysisStatus}`}>{item.analysisStatus === "ready" ? "AI ready" : item.analysisStatus === "fallback" ? "Fallback" : item.analysisStatus === "processing" ? "Analyzing" : "Belum"}</span>
+                      <span className={`media-ai-status media-ai-status--${item.analysisStatus}`}>{item.analysisStatus === "ready" ? "Petunjuk siap" : item.analysisStatus === "fallback" ? "Siap dipakai" : item.analysisStatus === "processing" ? "Menyiapkan" : "Belum"}</span>
                     </div>
-                    <span>{item.source === "owner" ? "Upload kamu" : item.contributorName || "Contributor anonim"}</span>
-                    {item.mediaIntelligence?.scene ? <p className="media-inventory-card__scene">{item.mediaIntelligence.scene}</p> : null}
+                    <span>{item.source === "owner" ? "Upload kamu" : item.contributorName || "Teman anonim"}</span>
+                    <details><summary>Petunjuk cerita otomatis</summary>{item.mediaIntelligence?.scene ? <p className="media-inventory-card__scene">{item.mediaIntelligence.scene}</p> : null}
                     {item.analysisStatus === "fallback" && analysisFailureLabel(item.analysisFailureCode) ? (
-                      <p className="media-inventory-card__analysis-note">{analysisFailureLabel(item.analysisFailureCode)} Original media tetap aman; coba analisis ulang.</p>
+                      <p className="media-inventory-card__analysis-note">{analysisFailureLabel(item.analysisFailureCode)} Media tetap bisa dipakai. Kamu boleh mencoba lagi.</p>
                     ) : null}
                     {(item.analysisStatus === "fallback" || item.analysisStatus === "not_started" || item.needsDeepAnalysis) && url ? (
                       <button
@@ -340,9 +340,9 @@ export function MediaInventoryDialog({
                         onClick={() => reanalyzeMedia(item, item.analysisStatus === "ready" ? "deep" : "quick_look")}
                         type="button"
                       >
-                        {analyzingMediaId === item.id ? "Menganalisis..." : item.analysisStatus === "ready" ? "Deep Analysis" : "Coba analisis lagi"}
+                        {analyzingMediaId === item.id ? "Menganalisis..." : item.analysisStatus === "ready" ? "Perdalam petunjuk" : "Coba analisis lagi"}
                       </button>
-                    ) : null}
+                    ) : null}</details>
                   </div>
                 </article>
               );

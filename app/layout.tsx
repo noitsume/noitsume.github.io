@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ThemeProvider, ThemeScript } from "@/components/theme";
 import { brand } from "@/config/brand";
 import "./globals.css";
+import "./production.css";
 
 export const metadata: Metadata = {
   title: {

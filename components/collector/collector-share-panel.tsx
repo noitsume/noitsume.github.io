@@ -90,7 +90,7 @@ export function CollectorSharePanel({
         </div>
         <div className="collector-share-panel__qr-copy">
           <strong>Pindai untuk berkontribusi</strong>
-          <span>QR membuka Collector publik tanpa login.</span>
+          <span>Bisa mengirim tanpa membuat akun.</span>
           {uniqueContributors.length > 0 ? (
             <div className="collector-share-panel__contributors" aria-label="Contributor terbaru">
               <div className="collector-share-panel__avatars">
@@ -105,7 +105,7 @@ export function CollectorSharePanel({
       </div>
 
       <div className="collector-share-panel__actions">
-        <Button variant="secondary" onClick={copyLink}>{copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />} {copied ? "Tersalin" : "Copy Link"}</Button>
+        <Button variant="secondary" onClick={copyLink}>{copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />} {copied ? "Tersalin" : "Salin tautan"}</Button>
         <a className="ui-button ui-button--ghost" href={`/c/${collectorId}`} rel="noreferrer" target="_blank"><ExternalLinkIcon size={16} /> Buka</a>
       </div>
 

@@ -1,3 +1,4 @@
+import { consumeRateLimit } from "@/lib/http/rate-limit";
 import "server-only";
 
 import { extname } from "node:path";
@@ -74,6 +75,7 @@ export async function getCollectorRoom(collectorId: string) {
   if (!found) {
     throw new ApiError("COLLECTOR_NOT_FOUND", "Collector tidak ditemukan.", 404);
   }
+  if (found.config?._deleting || (found.expiresAt && Date.parse(found.expiresAt) <= Date.now())) throw new ApiError("COLLECTOR_NOT_FOUND", "Pengumpulan tidak lagi tersedia.", 404);
   return normalizeCollectorRoom(found);
 }
 
@@ -91,6 +93,7 @@ async function requireOwnedRoom(ownerUid: string, roomId: string) {
   if (room.ownerUid !== ownerUid) {
     throw new ApiError("ROOM_FORBIDDEN", "Kamu tidak memiliki akses ke Room ini.", 403);
   }
+  if (room.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sedang dihapus.", 409);
   return room;
 }
 
@@ -156,6 +159,7 @@ async function prepareUploads(
 
 export async function prepareCollectorUploads(collectorId: string, input: UploadRequest) {
   const room = await requireOpenCollectorRoom(collectorId);
+  await consumeRateLimit("uploads:" + room.id, 2 * 1024 ** 3, 24 * 60 * 60 * 1000, input.files.reduce((sum, file) => sum + file.sizeBytes, 0));
   const submissionId = createId("submission");
   const uploads = await prepareUploads(
     room,
@@ -293,18 +297,19 @@ async function verifyUploadedCandidates(input: {
 }
 
 export async function commitCollectorSubmission(collectorId: string, input: SubmitRequest) {
-  const room = await requireOpenCollectorRoom(collectorId);
+  const room = await getCollectorRoom(collectorId);
   const now = new Date().toISOString();
-  const submissionId = input.media.length > 0 ? input.submissionId! : createId("submission");
+  const submissionId = input.submissionId ?? createId("submission");
   const contributorName = normalizeOptionalText(input.contributorName);
   const message = normalizeOptionalText(input.message);
 
   // Idempotent retry: once a submission exists, do not re-verify or rewrite it.
-  if (input.media.length > 0) {
+  if (input.submissionId) {
     const existing = await backendRepositories.submissions.getById(room.id, submissionId);
     if (existing) return { submission: existing };
   }
 
+  if (room.status !== "collecting") throw new ApiError("COLLECTION_CLOSED", "Pengumpulan sudah ditutup.", 409);
   const verifiedMedia = await verifyUploadedCandidates({
     room,
     candidates: input.media,
@@ -583,6 +588,10 @@ export async function moderateOwnedSubmissions(
   const concreteSubmissions = submissions.filter((item): item is Submission => Boolean(item));
   if (concreteSubmissions.some((item) => item.source === "owner")) {
     throw new ApiError("OWNER_MEDIA_NOT_MODERATABLE", "Upload owner tidak masuk antrean moderation.", 409);
+  }
+
+  if (action === "delete" && submissions.some(item => item?.status === "approved")) {
+    throw new ApiError("APPROVED_MEDIA_PROTECTED", "Kiriman yang sudah diterima tetap disimpan agar tautan terbitan tidak rusak. Atur media yang ditampilkan melalui Studio.", 409);
   }
 
   if (action === "approve") {
