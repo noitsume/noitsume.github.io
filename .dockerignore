@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+.env
+.env.*
+!.env.example
+npm-debug.log*
+*.log
+coverage
+.playwright-cli
+playwright-report
+test-results
+.firebase
+.vercel

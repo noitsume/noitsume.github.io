@@ -1,3 +1,16 @@
+# Kenangin.id
+
+Kenangin.id adalah website untuk merangkai foto, video, ucapan, dan musik menjadi
+hadiah kenangan interaktif. Pembuat menyiapkan Room, mengumpulkan kiriman melalui
+tautan Collector, lalu menyusun cerita di Studio dengan musik dan efek visual Aura.
+Cerita yang sudah diterbitkan dapat dinikmati melalui tautan Receiver tanpa login.
+
+## Display Web
+
+![Tampilan dashboard Kenangin.id](docs/research/meja-kenangan-2026-10-12/dashboard-final.png)
+
+**Deployment:** [Buka Kenangin.id](https://noitsume-github-io.vercel.app/)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
