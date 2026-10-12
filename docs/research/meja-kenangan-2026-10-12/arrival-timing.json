@@ -1,0 +1,51 @@
+{
+  "environment": "Next development / Intel UHD / current in-app browser",
+  "marks": [
+    {
+      "ms": 1151.0999999940395,
+      "name": "desk:module"
+    },
+    {
+      "ms": 1634.699999988079,
+      "name": "desk:mount"
+    },
+    {
+      "ms": 1634.8999999910593,
+      "name": "desk:compile-start"
+    },
+    {
+      "ms": 1856.79999999702,
+      "name": "desk:compile-end"
+    },
+    {
+      "ms": 1864.3999999910593,
+      "name": "desk:ready"
+    },
+    {
+      "ms": 1864.5,
+      "name": "desk:arrival-start"
+    },
+    {
+      "ms": 4332.399999991059,
+      "name": "desk:arrival-end"
+    }
+  ],
+  "max": 27.800000000000185,
+  "p50": 6.900000000000091,
+  "p95": 7.200000000000273,
+  "samples": 326,
+  "states": [
+    {
+      "at": 958.7999999970198,
+      "state": "pending"
+    },
+    {
+      "at": 1874.3999999910593,
+      "state": "running"
+    },
+    {
+      "at": 4332.899999991059,
+      "state": "idle"
+    }
+  ]
+}

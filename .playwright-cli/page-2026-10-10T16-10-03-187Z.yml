@@ -1,6 +1,0 @@
-- generic [ref=e5]:
-  - heading "Are you of" [level=2] [ref=e7]
-  - heading "legal age?" [level=2] [ref=e9]
-  - generic [ref=e10]:
-    - generic [ref=e11] [cursor=pointer]: "Yes"
-    - generic [ref=e12] [cursor=pointer]: "No"

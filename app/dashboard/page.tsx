@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardRoomSections } from "@/components/dashboard/dashboard-room-sections";
 import { DashboardBackground } from "@/components/dashboard/dashboard-background";
+import { DeskExploreButton } from "@/components/dashboard/desk-controls";
 import { AppShell } from "@/components/shell";
 import {
   ArrowRightIcon,
@@ -168,16 +169,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     <AppShell user={user} rightRail={rightRail} className="app-shell--desk-studio" background={<DashboardBackground />}>
       <div className="dashboard-page">
         <Surface className="dashboard-hero" tone="elevated">
+          <div className="dashboard-hero__edition"><span>KENANGIN / PERSONAL WORKSPACE</span><span aria-hidden="true">✳</span></div>
           <div className="dashboard-hero__copy">
-            <p className="ui-eyebrow">RUANG UNTUK YANG BERARTI</p>
+            <p className="ui-eyebrow">SELAMAT DATANG DI MEJA KENANGAN</p>
             <div className="dashboard-hero__title-row">
-              <h1>Kenangan kecil, berarti besar.</h1>
+              <h1>Cerita kecil.<br /><em>Berarti besar.</em></h1>
             </div>
             <p>
-              Kumpulkan cerita dari orang terdekat. Rangkai menjadi kejutan yang akan selalu diingat.
+              Ada yang layak dikenang, ada yang menunggu dirangkai.<br className="dashboard-hero__linebreak" /> Mulai dari satu cerita, untuk seseorang yang berarti.
             </p>
           </div>
-
+          <DeskExploreButton />
           <div className="dashboard-stats">
             <StatItem label="Total Room" value={stats.total} description="Seluruh workspace" tone="coral" />
             <StatItem label="Disiapkan" value={stats.waiting} description="Sedang dirangkai" tone="neutral" />

@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-12",
+  "scope": "Actual authenticated Room Studio; no new demo route; draft only",
+  "roomId": "room_b46e26e23bd44b26914b6eca94000427",
+  "renderer": "rintik-resonansi-v2",
+  "extractor": "spectral-flux-v2",
+  "finalChecks": {"npmCi": "restored 1150 packages from lockfile", "npmRunDev": "Ready on port 3000 in 3.1 seconds", "npmRunLint": "passed", "npmRunTypecheck": "passed", "npmTest": {"passed": 61, "failed": 0}, "npmRunBuild": "passed", "studioAfterRestart": "loaded authenticated Room without browser errors"},
+  "sources": ["Room soundtrack: Hangat-fixture-76", "Section music: Ritme-referensi", "Video: Ritme-audio-video, static picture with reference audio"],
+  "observations": {
+    "mp3WorkerExtraction": "passed through Studio upload",
+    "videoAudioExtraction": "passed through Studio preview preparation; API HTTP 200",
+    "firstPreviewFocus": "Passed: selecting section 2 from unopened preview lands on section 2",
+    "videoSeek": {"targetSec": 4, "shaderTimeSec": 4.012322, "mediaTimeSec": 4.012657},
+    "pausedVideo": {"frontTimeSec": 16.403835, "frameCounterBefore": 1705, "frameCounterAfter": 1705, "foregroundRemainsVisible": true},
+    "backgroundWhileVideoPaused": {"backBeforeSec": 7.66839, "backAfterSec": 8.016689, "frontBeforeSec": 16.403835, "frontAfterSec": 16.403835},
+    "bothMusicPaused": {"frontSec": 2.690612, "backSec": 1.979424, "frameCounterBefore": 14487, "frameCounterAfter": 14487},
+    "reducedMotion": {"audioPlaying": true, "motion": "off", "frameCounterBefore": 2382, "frameCounterAfter": 2382},
+    "render": {"canvases": 1, "drawCalls": 1, "triangles": 2},
+    "responsive": {"mobileCssWidth": 355, "mobileDocumentWidth": 341, "desktopCssWidth": 1309, "desktopDocumentWidth": 1295, "physicalDevicesTested": false}
+  },
+  "samplingProbe": {
+    "frames": 90,
+    "beforeAgeMs": {"p50": 22.142, "p95": 51.835},
+    "afterAgeMs": {"p50": 0, "p95": 0.678},
+    "afterFrameIntervalMs": {"p50": 20.8, "p95": 27.9},
+    "scope": "Local development browser only; excludes audio output latency and does not measure musical annotation accuracy"
+  },
+  "screenshots": ["research/aura-reference-2026-10-12/room-v2-desktop.jpg", "research/aura-reference-2026-10-12/room-v2-mobile.jpg"],
+  "limitations": ["No automatic emotion or drum classification", "No physical Android/iPhone QA", "20-minute extraction memory not benchmarked", "Spatial v1 pixel-preserving migration remains open", "MCP bridge unavailable for this v2 inspection; browser CDP used"]
+}
