@@ -4,6 +4,9 @@ import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, ty
 import { useTheme } from "@/components/theme/theme-provider";
 import { releaseDeskArrival } from "@/lib/dashboard/arrival";
 import { DeskFallback } from "./desk-fallback";
+import { DeskArrivalOverlay, DeskTourOverlay } from "./desk-controls";
+import { DeskDayCycle } from "./desk-day-cycle";
+import type { DeskAtmosphere } from "@/lib/dashboard/day-cycle";
 
 // Never rendered on the server: `enabled` is set after mounting. Keep the lazy
 // boundary inside the backdrop so a slow visual chunk cannot suspend the shell.
@@ -19,12 +22,14 @@ class DeskBoundary extends Component<{ children: ReactNode; onFailure: () => voi
 export function DashboardDesk() {
   const { theme } = useTheme();
   const host = useRef<HTMLDivElement>(null);
+  const atmosphere = useRef<DeskAtmosphere>({ day: 0, night: 1, active: false });
   const [enabled, setEnabled] = useState(false);
   const [failed, setFailed] = useState(false);
   const fail = useCallback(() => {
     setFailed(true);
     host.current?.removeAttribute("data-ready");
     releaseDeskArrival();
+    document.dispatchEvent(new Event("kenangin:desk-ready"));
   }, []);
 
   useEffect(() => {
@@ -42,11 +47,11 @@ export function DashboardDesk() {
     };
   }, []);
 
-  return <div className="dashboard-desk" ref={host} aria-hidden="true" data-renderer={failed || !enabled ? "static" : "webgl"}>
+  return <><div className="dashboard-desk" ref={host} aria-hidden="true" data-renderer={failed || !enabled ? "static" : "webgl"}>
     <DeskFallback />
     {enabled && !failed && <DeskBoundary onFailure={fail}>
-      <Suspense fallback={null}><DeskScene theme={theme} host={host} onFailure={fail} /></Suspense>
+      <Suspense fallback={null}><DeskScene theme={theme} host={host} atmosphere={atmosphere} onFailure={fail} /></Suspense>
     </DeskBoundary>}
     <div className="dashboard-desk__vignette" />
-  </div>;
+  </div><DeskArrivalOverlay /><DeskTourOverlay /><DeskDayCycle host={host} atmosphere={atmosphere} /></>;
 }

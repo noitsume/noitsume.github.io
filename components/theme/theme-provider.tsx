@@ -6,12 +6,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
 
 export type ThemeMode = "light" | "dark";
+export type ThemeTransitionHandler = (request: {
+  from: ThemeMode; to: ThemeMode; commit: () => void;
+}) => Promise<void>;
 type LampState = "on" | "off" | "flicker-on" | "flicker-off";
 
 type TransitionOrigin = { x: number; y: number };
@@ -29,6 +33,7 @@ type ThemeContextValue = {
   theme: ThemeMode;
   isTransitioning: boolean;
   toggleTheme: (origin: TransitionOrigin) => Promise<void>;
+  registerTransition: (handler: ThemeTransitionHandler) => () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -59,6 +64,12 @@ function getDocumentTheme(): ThemeMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionHandler = useRef<ThemeTransitionHandler | null>(null);
+  const busy = useRef(false);
+  const registerTransition = useCallback((handler: ThemeTransitionHandler) => {
+    transitionHandler.current = handler;
+    return () => { if (transitionHandler.current === handler) transitionHandler.current = null; };
+  }, []);
 
   const setLampState = useCallback((state: LampState) => {
     document.documentElement.dataset.lamps = state;
@@ -177,7 +188,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = useCallback(
     async (origin: TransitionOrigin) => {
-      if (isTransitioning) return;
+      if (busy.current) return;
+      busy.current = true;
 
       setIsTransitioning(true);
       document.documentElement.dataset.themeTransitioning = "true";
@@ -191,6 +203,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // CSS uses this before the actual theme commit so night-only motion can
         // freeze + fade while the lamps are still performing their power-down.
         document.documentElement.dataset.themeTarget = nextTheme;
+
+        // A spatial workspace owns its lighting choreography. Other routes keep
+        // the existing reveal; theme persistence still has a single owner here.
+        if (transitionHandler.current) {
+          try {
+            await transitionHandler.current({ from: currentTheme, to: nextTheme, commit: () => commitTheme(nextTheme) });
+          } finally {
+            if (getDocumentTheme() !== nextTheme) commitTheme(nextTheme);
+            setLampState(nextTheme === "dark" ? "on" : "off");
+          }
+          return;
+        }
 
         if (currentTheme === "light") {
           // Light → Dark: circle reveal first, then the lamps wake/flicker and settle.
@@ -226,14 +250,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         delete document.documentElement.dataset.themeTarget;
         setTheme(getDocumentTheme());
         setIsTransitioning(false);
+        busy.current = false;
       }
     },
-    [isTransitioning, revealTheme, setLampState],
+    [commitTheme, revealTheme, setLampState],
   );
 
   const value = useMemo(
-    () => ({ theme, isTransitioning, toggleTheme }),
-    [theme, isTransitioning, toggleTheme],
+    () => ({ theme, isTransitioning, toggleTheme, registerTransition }),
+    [theme, isTransitioning, toggleTheme, registerTransition],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

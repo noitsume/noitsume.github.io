@@ -77,6 +77,7 @@ export function AuthForm({
     if (busy || transitioning) return;
     setBusy(true);
     setError(null);
+    preloadDeskScene(ownerDestination(nextPath));
 
     try {
       const auth = getFirebaseClientAuth();
@@ -100,6 +101,7 @@ export function AuthForm({
     if (busy || transitioning) return;
     setBusy(true);
     setError(null);
+    preloadDeskScene(ownerDestination(nextPath));
 
     try {
       const auth = getFirebaseClientAuth();

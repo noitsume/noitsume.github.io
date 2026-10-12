@@ -1,6 +1,8 @@
 export const DESK_ARRIVAL_KEY = "kenangin:desk-entry";
 export const DESK_ARRIVAL_TTL_MS = 30_000;
 export const AUTH_EXIT_MS = 160;
+export const DESK_PREPARE_MS = 3_200;
+export const DESK_FAILSAFE_MS = 6_000;
 
 /** A visual hint only. Authentication and routing never depend on storage. */
 export function prepareDeskArrival(destination: string) {
@@ -36,8 +38,8 @@ export const deskArrivalBootstrap = `(() => {
     };
     const deadline = setTimeout(() => {
       if (root.dataset.deskEntry === "pending") release();
-    }, 1400);
-    const failsafe = setTimeout(release, 4000);
+    }, ${DESK_PREPARE_MS});
+    const failsafe = setTimeout(release, ${DESK_FAILSAFE_MS});
     const skip = () => release();
     const hidden = () => { if (document.visibilityState === "hidden") release(); };
     addEventListener("pointerdown", skip, { once: true, capture: true });

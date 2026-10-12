@@ -76,6 +76,10 @@ function DashboardRoomCard({
         "--room-surface": theme?.palette.surface,
         "--room-light-x": `${58 + Array.from(room.id).reduce((n, c) => n + c.charCodeAt(0), 0) % 30}%`,
       } as CSSProperties}>
+        <div className="dashboard-room-card__keepsake" aria-hidden="true">
+          <span className="dashboard-room-card__art"><i /><b /></span>
+          <span className="dashboard-room-card__monogram">{room.recipientName.trim().slice(0, 1).toLocaleUpperCase("id") || "K"}</span>
+        </div>
         <span className="dashboard-room-card__theme">{room.customThemeNameRaw || theme?.name || "Kenangin"}</span>
         <Badge className={`dashboard-room-card__status ${statusBadgeClass(derived)}`}>
           <span className="dashboard-room-card__status-dot" aria-hidden="true" />

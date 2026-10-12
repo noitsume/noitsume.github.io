@@ -64,7 +64,7 @@ try {
       return { states, duration: end.at-start.at, samples: frames.length, p50: sorted[Math.floor(sorted.length*.5)], p95: sorted[Math.floor(sorted.length*.95)], max: sorted.at(-1), over33ms: frames.filter(x=>x>33.4).length };
     });
     report.arrivals.push(timing);
-    verify(timing.duration < 1900 && timing.duration > 1400, `arrival ${run+1} settles within 1.4–1.9 seconds`);
+    verify(timing.duration < 2800 && timing.duration > 2200, `arrival ${run+1} settles within 2.2–2.8 seconds`);
     await frozen(`arrival ${run+1} returns to demand rendering`);
   }
   await page.reload(); await sceneReady();
@@ -101,7 +101,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole('button', { name: 'Aktifkan tema terang' }).click();
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'light' && !document.documentElement.dataset.themeTransitioning);
-  verify(await page.evaluate(() => window.__desk.scene.getObjectByName('Desk / grain').material.uniforms.uDark.value === 0), 'theme toggle updates DOM and scene together');
+  verify(await page.evaluate(() => window.__desk.scene.getObjectByName('Walnut / rounded solid edge').material.color.getHexString() === 'a89170'), 'theme toggle updates DOM and scene together');
   await frozen('light theme is also idle');
   await page.screenshot({ path: path.join(output, 'light-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(250);

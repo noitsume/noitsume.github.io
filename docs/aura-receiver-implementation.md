@@ -61,7 +61,7 @@ Three.js/R3F menggambar dua lapisan dalam satu shader/canvas. GSAP mengatur buka
 
 ## Bukti verifikasi
 
-**56 tes proyek lulus**: FFT, stereo anti-fase, keheningan, onset pada timestamp, tempo 120/150 BPM, seek deterministik, gate playback, aksen lintas loop, kepemilikan media, penyimpanan di luar Firestore, serta immutability preview/publikasi. Typecheck, lint dan build produksi diperiksa pada kelanjutan ini.
+**61 tes proyek lulus** pada pemeriksaan akhir: FFT, stereo anti-fase, keheningan, onset pada timestamp, tempo 120/150 BPM, seek deterministik, gate playback, aksen lintas loop, kepemilikan media, penyimpanan di luar Firestore, serta immutability preview/publikasi. `npm run lint`, `npm run typecheck`, `npm test` dan `npm run build` lulus. Dependency lokal yang sempat tidak lengkap dipulihkan menggunakan `npm ci`; `npm run dev` kemudian mencapai Ready pada port 3000 dalam 3,1 detik dan Studio akun terbuka tanpa error browser.
 
 Browser memakai Room akun sebenarnya: MP3 dari video referensi pengguna, MP3 lembut 76 BPM, dua gambar uji, dan video bergambar diam dengan audio referensi. Gambar diam memisahkan pengamatan Aura dari flash bawaan video asli. Unggah, ekstraksi MP3/audio video, simpan draf dan preview dijalankan melalui UI.
 

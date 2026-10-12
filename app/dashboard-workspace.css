@@ -126,3 +126,149 @@ html[data-theme="light"] .app-shell--desk-studio { --desk-panel: 255 252 246; --
   html[data-desk-entry] .app-shell--desk-studio > .app-shell__body { opacity: 1; }
   .app-shell--desk-studio .dashboard-room-card { transition: none; transform: none; }
 }
+
+/* Meja Kenangan: the same walnut, linen and brass palette in the scene and UI. */
+.app-shell--desk-studio { --desk-panel: 29 28 23; --desk-edge: 231 204 157; --desk-ink: #e4c48d; }
+html[data-theme="light"] .app-shell--desk-studio {
+  --desk-panel: 253 253 247; --desk-edge: 67 93 80; --desk-ink: #3c6758;
+  --text-primary: #23372f; --text-secondary: #53645c; --text-muted: #64776a;
+  --surface: #fcfcf6; --surface-strong: #f8faf4; --surface-quiet: #f1f5ed; --surface-hover: #e8eee3;
+  --nav-bg: rgb(247 251 245 / .96); --border: rgb(58 84 65 / .16); --border-strong: rgb(58 84 65 / .25);
+}
+:root .app-shell--desk-studio .dashboard-hero {
+  display: flex; flex-direction: column; align-items: stretch; padding: 32px 36px 26px; gap: 0;
+  border-radius: 8px; border-color: rgb(232 210 171 / .14);
+  background: linear-gradient(110deg, rgb(var(--desk-panel) / .97), rgb(var(--desk-panel) / .89) 55%, rgb(var(--desk-panel) / .58));
+  box-shadow: 0 16px 60px rgb(0 0 0 / .12), inset 0 1px rgb(255 241 213 / .06);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.dashboard-hero__edition { display: flex; justify-content: space-between; align-items: center; padding-bottom: 27px; color: var(--text-secondary); font-size: 9px; letter-spacing: .2em; }
+.dashboard-hero__edition > span:last-child { font-size: 25px; color: var(--desk-ink); line-height: 1; }
+.app-shell--desk-studio .dashboard-hero__copy { width: 76%; }
+.app-shell--desk-studio .dashboard-hero__copy > .ui-eyebrow { color: var(--desk-ink); font-size: 9px; letter-spacing: .12em; margin-bottom: 16px; }
+.app-shell--desk-studio .dashboard-hero__title-row h1 { font: 400 clamp(47px, 4.5vw, 76px)/.99 Georgia, "Times New Roman", serif; letter-spacing: -.047em; max-width: 15ch; margin: 0; }
+.app-shell--desk-studio .dashboard-hero__title-row h1 em { font-weight: 400; color: var(--desk-ink); }
+.app-shell--desk-studio .dashboard-hero__copy > p:last-child { max-width: 49ch; font-size: 12px; line-height: 1.8; margin: 20px 0 27px; color: var(--text-secondary); }
+.desk-explore-button { position: absolute; top: 136px; right: 36px; display: flex; flex-direction: column; align-items: center; gap: 13px; width: 155px; min-height: 44px; padding: 0; border: 0; color: var(--text-primary); background: none; cursor: pointer; text-align: center; font-size: 12px; }
+.desk-explore-button__icon { display: grid; place-items: center; width: 67px; height: 67px; border: 1px solid rgb(229 202 155 / .4); border-radius: 50%; color: var(--desk-ink); font-size: 27px; transition: background .25s, transform .25s; }
+.desk-explore-button small { display: block; margin-top: 6px; font-size: 9px; color: var(--text-secondary); }
+.desk-explore-button:hover .desk-explore-button__icon { background: rgb(217 185 130 / .12); transform: rotate(45deg); }
+.desk-explore-button:disabled { opacity: .35; cursor: default; }
+.desk-explore-button:focus-visible { outline: 2px solid var(--desk-ink); outline-offset: 8px; border-radius: 5px; }
+.app-shell--desk-studio .dashboard-stats { padding-top: 21px; gap: 0; }
+:root .app-shell--desk-studio .dashboard-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-inline: 17px; }
+.app-shell--desk-studio .dashboard-stat:first-child { padding-left: 0; }
+.app-shell--desk-studio .dashboard-stat__orb { display: none; }
+.app-shell--desk-studio .dashboard-stat strong { font: 400 33px/1 Georgia, serif; order: -1; color: var(--desk-ink); }
+.app-shell--desk-studio .dashboard-stat .ui-eyebrow { font-size: 9px; letter-spacing: .07em; margin: 0; }
+.app-shell--desk-studio .dashboard-stat > span { font-size: 10px; }
+.app-shell--desk-studio .dashboard-search { padding-block: 4px; }
+.app-shell--desk-studio .dashboard-search input { border-radius: 5px; background: rgb(var(--desk-panel) / .92); }
+.app-shell--desk-studio .dashboard-section .section-header h2 { font: 400 27px/1.2 Georgia, serif; letter-spacing: -.025em; }
+:root .app-shell--desk-studio .dashboard-room-card { border-radius: 7px; background: rgb(var(--desk-panel) / .96); box-shadow: 0 7px 22px rgb(0 0 0 / .18); }
+:root .app-shell--desk-studio .dashboard-room-card__cover { min-height: 145px; flex-basis: 145px; background: linear-gradient(125deg, color-mix(in srgb, var(--room-surface), #1b211c 78%), #232b23); }
+.app-shell--desk-studio .dashboard-room-card__cover::before { display: none; }
+.app-shell--desk-studio .dashboard-room-card__keepsake { position: absolute; inset: 29px 25px -17px auto; width: 118px; transform: rotate(11deg); transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+.dashboard-room-card__art { position: absolute; inset: 0; overflow: hidden; border: 6px solid #d6c8a8; border-bottom-width: 22px; background: linear-gradient(#56716a, color-mix(in srgb, var(--room-accent), #dac399 55%)); box-shadow: -8px 4px 0 -2px #8d826c, 0 8px 25px rgb(0 0 0 / .3); }
+.dashboard-room-card__art::before { content: ""; position: absolute; top: 13px; right: 17px; width: 22px; height: 22px; border-radius: 50%; background: #f1d299; }
+.dashboard-room-card__art i, .dashboard-room-card__art b { position: absolute; display: block; bottom: -22px; left: -20px; width: 120%; height: 70%; border-radius: 50% 50% 0 0; transform: rotate(-20deg); background: #476355; }
+.dashboard-room-card__art b { left: 35px; bottom: -30px; background: #253e32; transform: rotate(20deg); }
+.dashboard-room-card__monogram { position: absolute; bottom: -1px; left: 12px; font: italic 16px Georgia, serif; color: #665b47; }
+.app-shell--desk-studio .dashboard-room-card__theme { max-width: 45%; font-size: 8px; line-height: 1.6; white-space: normal; bottom: 19px; color: #d6c9ad; }
+.app-shell--desk-studio .dashboard-room-card__content { padding: 20px; }
+.app-shell--desk-studio .dashboard-room-card__content h3 { font: 400 24px/1.2 Georgia, serif; letter-spacing: -.025em; }
+.app-shell--desk-studio .dashboard-room-card__recipient { font-size: 11px; margin-top: 13px; }
+.app-shell--desk-studio .dashboard-room-card__expiry { font-size: 10px; }
+.app-shell--desk-studio .dashboard-room-card__open { border-radius: 4px; font-weight: 500; }
+.app-shell--desk-studio .dashboard-room-card__pin, .app-shell--desk-studio .dashboard-room-card__more { border-radius: 50%; }
+.app-shell--desk-studio .dashboard-room-card:has(.dashboard-room-menu[open]) .dashboard-room-card__cover { border-radius: 6px 6px 0 0; }
+.app-shell--desk-studio .create-room-card { border-radius: 7px; border-color: rgb(226 202 162 / .26); background: rgb(var(--desk-panel) / .88); }
+.app-shell--desk-studio .create-room-card__plus { width: 55px; height: 55px; color: var(--desk-ink); border: 1px solid rgb(224 196 148 / .28); background: transparent; }
+.app-shell--desk-studio .create-room-card h3 { font: 400 25px Georgia, serif; }
+.app-shell--desk-studio .create-room-card p { font-size: 11px; }
+.app-shell--desk-studio .dashboard-rail__panel { border-radius: 7px; background: rgb(var(--desk-panel) / .88); }
+.app-shell--desk-studio .dashboard-rail__panel h3 { font: 400 23px Georgia, serif; }
+.app-shell--desk-studio .app-shell__left, .app-shell--desk-studio .app-shell__right { border-radius: 9px; background: rgb(var(--desk-panel) / .6); }
+.dashboard-desk__vignette { background: radial-gradient(ellipse at 60% 45%, transparent 20%, rgb(8 11 8 / .35) 75%, rgb(8 11 8 / .76)); transition: opacity .7s; }
+html[data-theme="light"] .app-shell--desk-studio .dashboard-desk__vignette { background: linear-gradient(180deg, rgb(217 231 224 / .5), transparent 30%, transparent 85%, rgb(53 76 60 / .1)); }
+html[data-theme="light"] .app-shell--desk-studio .desk-explore-button__icon { border-color: rgb(126 101 60 / .35); }
+html[data-theme="light"] .app-shell--desk-studio .create-room-card { border-color: rgb(126 101 60 / .36); }
+html[data-desk-view="tour"] { overflow: hidden; }
+html[data-desk-view="tour"] .dashboard-desk__vignette { opacity: .6; }
+html[data-theme="light"][data-desk-view="tour"] .dashboard-desk__vignette { opacity: .12; }
+html[data-theme="light"][data-desk-entry] .dashboard-desk__vignette { opacity: .12; }
+.desk-tour { position: fixed; z-index: 30; inset: 0; pointer-events: none; color: #f6ead6; background: linear-gradient(0deg, rgb(10 16 11 / .68), transparent 34%); }
+.desk-tour__caption { position: absolute; left: clamp(28px, 5vw, 90px); bottom: 48px; }
+.desk-tour__caption > .ui-eyebrow { color: #d3bd93; font-size: 9px; letter-spacing: .2em; }
+.desk-tour__caption > p { font: 400 clamp(32px, 3.8vw, 58px)/1.05 Georgia, serif; letter-spacing: -.04em; margin: 17px 0; }
+.desk-tour__caption em { color: #dfc394; }
+.desk-tour__hint { font-size: 11px; color: #c3c1b3; }
+.desk-tour__actions { position: absolute; right: clamp(24px, 5vw, 90px); bottom: 56px; display: flex; flex-direction: column; align-items: flex-end; gap: 15px; pointer-events: auto; }
+.desk-tour__light { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: #dfcbaa; font-size: 11px; cursor: pointer; }
+.desk-tour__light > span { font-size: 20px; }
+.desk-tour__return { display: flex; align-items: center; gap: 22px; min-height: 51px; padding: 0 23px; border-radius: 3px; border: 1px solid #b9a786; background: #e8dac0; color: #30372b; font-size: 12px; cursor: pointer; box-shadow: 0 6px 24px rgb(0 0 0 / .16); }
+.desk-tour__return > span { font-size: 22px; }
+.desk-tour__return:focus-visible { outline: 2px solid #ffe0a3; outline-offset: 5px; }
+.desk-tour__daylight { font-size: 11px; color: #3d6650; padding: 14px 0; }
+.desk-tour__daylight > span { font-size: 20px; margin-right: 6px; }
+/* Morning is sunlit paper against walnut, with no milky fullscreen tint. */
+html[data-theme="light"] .app-shell--desk-studio .dashboard-hero {
+  background: linear-gradient(125deg, #fffffa, #f6f9f2 68%, #edf3e8);
+  border-color: #d4dfcf; box-shadow: 0 18px 48px rgb(36 61 42 / .12), inset 0 1px #fff;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html[data-theme="light"] .app-shell--desk-studio :is(.dashboard-room-card, .dashboard-rail__panel, .create-room-card) { background: #fcfcf5; box-shadow: 0 9px 28px rgb(35 57 37 / .1); }
+html[data-theme="light"] .app-shell--desk-studio :is(.app-shell__left, .app-shell__right) { background: rgb(246 250 242 / .94); }
+html[data-theme="light"] .app-shell--desk-studio .dashboard-search input { background: #fffffa; }
+html[data-theme="light"] .app-shell--desk-studio :is(.dashboard-search > span, .section-header) { color: #f9fbef; text-shadow: 0 1px 8px rgb(11 28 14 / .6); }
+html[data-theme="light"] .app-shell--desk-studio .section-header h2 { color: #f9fbef; }
+html[data-theme="light"] .app-shell--desk-studio .section-header :is(.ui-eyebrow, p) { color: #e2ead9; }
+html[data-theme="light"] .desk-tour { color: #293e32; background: linear-gradient(0deg, rgb(238 246 230 / .98), rgb(238 246 230 / .76) 25%, transparent 40%); }
+html[data-theme="light"] .desk-tour__caption > .ui-eyebrow, html[data-theme="light"] .desk-tour__caption em { color: #3c6758; }
+html[data-theme="light"] .desk-tour__hint { color: #506a59; }
+html[data-theme="light"] .desk-tour__return { color: #f7faef; background: #365e49; border-color: #365e49; box-shadow: 0 6px 20px rgb(36 60 39 / .16); }
+html[data-theme="light"] .desk-tour__return:focus-visible { outline-color: #365e49; }
+
+/* GSAP's shared clock reveals morning from the lower left, and night at the lamp. */
+.desk-day-cycle { position: fixed; z-index: 10000; inset: 0; overflow: hidden; pointer-events: auto; }
+.desk-day-cycle[hidden] { display: none; }
+.desk-day-cycle__shade { position: absolute; inset: 0; background: #090c0b; }
+.desk-day-cycle__glow { position: absolute; inset: -30%; opacity: 0; transform-origin: 19% 81%; background: radial-gradient(ellipse at 19% 81%, rgb(255 248 206 / .8), rgb(255 215 137 / .3) 19%, transparent 52%); pointer-events: none; }
+.desk-day-cycle[data-destination="dark"] .desk-day-cycle__glow { transform-origin: 67% 33%; background: radial-gradient(ellipse at 67% 33%, rgb(249 195 108 / .7), transparent 42%); }
+.desk-day-cycle__caption { position: absolute; left: clamp(28px, 5vw, 80px); top: 15%; color: #d9d3b8; font-size: 9px; letter-spacing: .26em; opacity: 0; pointer-events: none; }
+.desk-day-cycle__caption em { display: block; margin-top: 16px; font: italic 400 clamp(27px, 3.6vw, 52px)/1.1 Georgia, serif; letter-spacing: -.03em; }
+.desk-day-cycle[data-destination="light"] .desk-day-cycle__night, .desk-day-cycle[data-destination="dark"] .desk-day-cycle__morning { display: none; }
+.desk-day-cycle > button { position: absolute; right: 28px; bottom: 28px; min-height: 44px; padding: 0 17px; border: 1px solid rgb(224 223 196 / .28); border-radius: 4px; background: #1b251e; color: #edead8; font-size: 11px; cursor: pointer; }
+.desk-day-cycle > button > span { margin-left: 15px; }
+html[data-desk-cycle] .dashboard-desk__vignette { opacity: var(--desk-cycle-ui, 1); transition: none; }
+.desk-arrival-caption { position: fixed; z-index: 31; inset: 0; pointer-events: none; color: var(--text-primary); }
+.desk-arrival-caption > span { position: absolute; top: 30px; left: clamp(24px, 4vw, 64px); font-size: 9px; letter-spacing: .2em; }
+.desk-arrival-caption button { position: absolute; right: 28px; bottom: 28px; min-height: 44px; padding: 0 16px; background: rgb(var(--page-bg-rgb) / .65); color: inherit; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 11px; pointer-events: auto; cursor: pointer; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .app-shell--desk-studio .dashboard-room-card:hover .dashboard-room-card__keepsake { transform: translateY(-5px) rotate(3deg); }
+}
+@media (max-width: 1200px) and (min-width: 1021px) {
+  .app-shell--desk-studio .dashboard-hero__copy { width: 100%; }
+  .desk-explore-button { position: static; flex-direction: row; width: auto; text-align: left; align-self: flex-start; margin-bottom: 24px; }
+  .desk-explore-button__icon { width: 36px; height: 36px; font-size: 19px; }
+  .desk-explore-button small { display: none; }
+}
+@media (max-width: 680px) {
+  :root .app-shell--desk-studio .dashboard-hero { padding: 25px 24px; gap: 0; }
+  .dashboard-hero__edition { font-size: 8px; padding-bottom: 23px; }
+  .app-shell--desk-studio .dashboard-hero__copy { width: 100%; }
+  .app-shell--desk-studio .dashboard-hero__title-row h1 { font-size: clamp(44px, 11vw, 63px); }
+  .app-shell--desk-studio .dashboard-hero__copy > p:last-child { max-width: 36ch; margin-bottom: 20px; }
+  .dashboard-hero__linebreak { display: none; }
+  .desk-explore-button { position: static; flex-direction: row; width: auto; align-self: flex-start; margin-bottom: 24px; text-align: left; font-size: 11px; }
+  .desk-explore-button__icon { width: 33px; height: 33px; font-size: 20px; }
+  .desk-explore-button small { display: none; }
+  .app-shell--desk-studio .dashboard-stats { row-gap: 23px; }
+  :root .app-shell--desk-studio .dashboard-stat:nth-child(3) { padding-left: 0; }
+  .desk-tour__caption { bottom: 165px; }
+  .desk-tour__actions { bottom: 28px; left: 28px; right: auto; align-items: flex-start; gap: 5px; }
+  .desk-tour__hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desk-explore-button__icon, .dashboard-room-card__keepsake, .dashboard-desk__vignette { transition: none; }
+}

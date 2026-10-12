@@ -10,6 +10,10 @@ Studio memakai empat langkah: **Momen → Atur Cerita → Musik → Pratinjau & 
 Susunan section manual, musik per section, kompatibilitas draf lama, dan aturan
 pemutaran dijelaskan di [Studio authoring](docs/studio-authoring.md).
 
+Gunakan Node.js 22 sesuai `.nvmrc`. Pada checkout baru atau jika executable
+`next`/`tsc` hilang dari `node_modules`, pulihkan dependency dengan `npm ci`.
+Perintah ini mengikuti `package-lock.json`; tidak perlu menghapus lockfile.
+
 First, run the development server:
 
 ```bash

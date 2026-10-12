@@ -3,7 +3,7 @@ require('./register.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
-const { deskArrivalBootstrap, DESK_ARRIVAL_KEY, DESK_ARRIVAL_TTL_MS, AUTH_EXIT_MS } = require('../lib/dashboard/arrival.ts');
+const { deskArrivalBootstrap, DESK_ARRIVAL_KEY, DESK_ARRIVAL_TTL_MS, AUTH_EXIT_MS, DESK_PREPARE_MS, DESK_FAILSAFE_MS } = require('../lib/dashboard/arrival.ts');
 
 function boot({ raw, path = '/dashboard', reduced = false, hidden = false, blocked = false } = {}) {
   const root = { dataset: {} };
@@ -54,14 +54,14 @@ test('deep links, reduced motion, hidden tabs and unavailable storage remain imm
 
 test('a missing renderer releases the gate; a ready renderer retains only the bounded failsafe', () => {
   const pending = boot({ raw: hint() });
-  pending.timers.get(1400)();
+  pending.timers.get(DESK_PREPARE_MS)();
   assert.equal(pending.root.dataset.deskEntry, undefined);
   assert.equal(pending.timers.size, 0);
   const running = boot({ raw: hint() });
   running.root.dataset.deskEntry = 'running';
-  running.timers.get(1400)();
+  running.timers.get(DESK_PREPARE_MS)();
   assert.equal(running.root.dataset.deskEntry, 'running');
-  running.timers.get(4000)();
+  running.timers.get(DESK_FAILSAFE_MS)();
   assert.equal(running.root.dataset.deskEntry, undefined);
 });
 
