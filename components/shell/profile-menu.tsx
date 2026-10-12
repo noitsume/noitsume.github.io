@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Avatar, ChevronDownIcon } from "@/components/ui";
 import { destroyServerSession } from "@/lib/auth/client";
 import {
@@ -21,7 +20,6 @@ function wait(ms: number) {
 
 export function ProfileMenu({ user }: { user: ShellUser }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
-  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [logoutAnimating, setLogoutAnimating] = useState(false);
 
@@ -60,8 +58,7 @@ export function ProfileMenu({ user }: { user: ShellUser }) {
       await destroyServerSession();
       setLogoutAnimating(true);
       await wait(LOGOUT_TO_AUTH_DURATION_MS);
-      router.replace("/login");
-      router.refresh();
+      window.location.replace("/login");
     } catch (error) {
       console.error("Logout gagal", error);
       setLogoutAnimating(false);

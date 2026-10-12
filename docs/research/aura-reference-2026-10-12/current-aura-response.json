@@ -1,0 +1,44 @@
+{
+  "source": "lib/receiver/playback.ts: beatPulse + smoothAccent",
+  "method": "Execute actual exported functions with a unit isolated beat and 30Hz signal ticks; no renderer, CSS, browser or audio-output latency included.",
+  "actualFunctionResults": [
+    {
+      "beatTimeSec": 0.25,
+      "peakTimeSec": 0.43333333333333335,
+      "peakDelayMs": 183.33333333333334,
+      "peakAmplitude": 0.27659187959703657
+    },
+    {
+      "beatTimeSec": 0.251,
+      "peakTimeSec": 0.43333333333333335,
+      "peakDelayMs": 182.33333333333334,
+      "peakAmplitude": 0.2785348150948113
+    },
+    {
+      "beatTimeSec": 0.266,
+      "peakTimeSec": 0.43333333333333335,
+      "peakDelayMs": 167.33333333333334,
+      "peakAmplitude": 0.3093715744792714
+    },
+    {
+      "beatTimeSec": 0.28,
+      "peakTimeSec": 0.4666666666666667,
+      "peakDelayMs": 186.66666666666666,
+      "peakAmplitude": 0.27021278130592796
+    }
+  ],
+  "continuousLimitPeakDelayMs": 183.10369179358855,
+  "syntheticTempoProbe": [
+    {
+      "inputPulseBpm": 120,
+      "estimatedBpm": 115,
+      "binsPerBeat": 10
+    },
+    {
+      "inputPulseBpm": 150,
+      "estimatedBpm": 73,
+      "binsPerBeat": 8
+    }
+  ],
+  "limitation": "Not a measurement of end-to-end device latency or subjective synchrony. Repeated beats, gain changes and render timing can alter the result."
+}

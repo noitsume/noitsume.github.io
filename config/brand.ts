@@ -1,6 +1,5 @@
 export const brand = {
   name: "Kenangin.id",
-  shortName: "K",
   description:
     "Workspace personal untuk merangkai, mengkurasi, dan membagikan kenangan.",
   copyright: `© ${new Date().getFullYear()} Kenangin.id`,

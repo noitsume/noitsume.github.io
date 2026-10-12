@@ -1,37 +1,18 @@
 import type { Media } from "@/lib/data/contracts";
-import { studioSectionPlanSchema, type StudioMediaSetting, type StudioSectionPlan } from "./contracts";
+import type { StudioMediaSetting, StudioSectionPlan } from "./contracts";
+import { emptySection } from "./authoring";
 
-export function buildStudioSectionPlan(
-  settings: StudioMediaSetting[],
-  media: Media[],
-): StudioSectionPlan[] {
-  const mediaById = new Map(media.map((item) => [item.id, item]));
-  const ordered = [...settings].sort((a, b) => a.order - b.order);
-  const photos = ordered.filter((setting) => mediaById.get(setting.mediaId)?.type === "photo");
-  const firstPhotoOrder = photos[0]?.order ?? Number.POSITIVE_INFINITY;
-  const plan: StudioSectionPlan[] = [];
-
-  for (const setting of ordered) {
-    const item = mediaById.get(setting.mediaId);
-    if (!item || item.type !== "video") continue;
-    plan.push(studioSectionPlanSchema.parse({
-      id: `section_video_${item.id.replace(/[^A-Za-z0-9_-]/g, "_")}`,
-      type: "video",
-      mediaIds: [item.id],
-      order: setting.order,
-    }));
+// This is an explicit recommendation, never an automatic side effect of saving.
+// Consecutive photos share a slider; videos retain their own spotlight and order.
+export function buildStudioSectionPlan(settings: StudioMediaSetting[], media: Media[]): StudioSectionPlan[] {
+  const byId = new Map(media.map(item => [item.id, item]));
+  const result: StudioSectionPlan[] = [];
+  for (const setting of [...settings].sort((a, b) => a.order - b.order)) {
+    const item = byId.get(setting.mediaId);
+    if (!item) continue;
+    const last = result.at(-1);
+    if (item.type === "photo" && last?.type === "photo-slide" && last.mediaIds.length < 5) last.mediaIds.push(item.id);
+    else result.push({ ...emptySection(item.type === "video" ? "video" : "photo-slide", `section_${item.id.replace(/[^A-Za-z0-9_-]/g, "_")}`, result.length), mediaIds: [item.id] });
   }
-
-  if (photos.length > 0) {
-    plan.push(studioSectionPlanSchema.parse({
-      id: "section_photo_slide",
-      type: "photo-slide",
-      mediaIds: photos.map((item) => item.mediaId),
-      order: firstPhotoOrder,
-    }));
-  }
-
-  return plan
-    .sort((a, b) => a.order - b.order)
-    .map((section, index) => ({ ...section, order: index }));
+  return result.map(section => section.type === "photo-slide" && section.mediaIds.length === 1 ? { ...section, type: "photo" } : section);
 }

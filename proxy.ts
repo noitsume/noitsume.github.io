@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/dev/aura" || pathname.startsWith("/dev/aura/")) {
+    return process.env.NODE_ENV === "development"
+      ? NextResponse.next()
+      : new NextResponse(null, { status: 404 });
+  }
+
   const cookieName = process.env.SESSION_COOKIE_NAME || "kenangin_session";
   const hasSessionCookie = Boolean(request.cookies.get(cookieName)?.value);
 
@@ -18,5 +25,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/rooms/:path*"],
+  matcher: ["/dashboard/:path*", "/rooms/:path*", "/dev/aura/:path*"],
 };

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { audioBeatmapReferenceSchema } from "@/lib/audio/features";
 import { auraIdSchema, type AuraId as CreativeAuraId } from "@/lib/creative/ids";
 import {
   analysisModeSchema,
@@ -12,6 +13,7 @@ export { auraIdSchema };
 export const mediaSourceSchema = z.enum(["contributor", "owner"]);
 
 export const mediaSchema = z.object({
+  audioBeatmap: audioBeatmapReferenceSchema.optional(),
   id: z.string().min(1),
   roomId: z.string().min(1),
   submissionId: z.string().min(1).nullable().default(null),

@@ -2,13 +2,13 @@ import type {
   Media,
   ReceiverAnalyticsEvent,
   Submission,
+  SubmissionModeration,
   Theme,
 } from "@/lib/data/contracts";
 import type {
   AnalyticsRepository,
   MediaCreateManyResult,
   MediaRepository,
-  SubmissionApprovalResult,
   SubmissionCreateResult,
   SubmissionRepository,
   ThemeRepository,
@@ -48,6 +48,10 @@ export class MockMediaRepository implements MediaRepository {
     void roomId;
     void mediaIds;
   }
+
+  async updateAudioBeatmap(roomId: string, mediaId: string, beatmap: NonNullable<Media["audioBeatmap"]>): Promise<void> {
+    void roomId; void mediaId; void beatmap;
+  }
 }
 
 export class MockSubmissionRepository implements SubmissionRepository {
@@ -67,36 +71,14 @@ export class MockSubmissionRepository implements SubmissionRepository {
     return "created";
   }
 
-  async approveWithMedia(
-    roomId: string,
-    submissionId: string,
-    media: Media[],
-    reviewedAt: string,
-  ): Promise<SubmissionApprovalResult> {
-    void roomId;
-    void submissionId;
-    void media;
-    void reviewedAt;
-    return "updated";
+  async claimModeration(roomId: string, submissionId: string, decision: SubmissionModeration): Promise<Submission | null> {
+    void roomId; void submissionId; void decision;
+    return null;
   }
 
-  async updateStatuses(
-    roomId: string,
-    submissionIds: string[],
-    status: Submission["status"],
-    reviewedAt: string,
-    options?: { clearStagedMedia?: boolean; clearMediaIds?: boolean },
-  ): Promise<void> {
-    void roomId;
-    void submissionIds;
-    void status;
-    void reviewedAt;
-    void options;
-  }
-
-  async deleteSubmission(roomId: string, submissionId: string): Promise<void> {
-    void roomId;
-    void submissionId;
+  async finishModeration(roomId: string, submissionId: string, decision: SubmissionModeration, media: Media[], reviewedAt: string): Promise<Submission | null> {
+    void roomId; void submissionId; void decision; void media; void reviewedAt;
+    return null;
   }
 }
 

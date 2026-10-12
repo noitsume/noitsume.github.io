@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import { ownerDestination } from "@/lib/auth/destination";
 import { FirebaseError } from "firebase/app";
 import {
   GoogleAuthProvider,
@@ -11,11 +11,9 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
-import {
-  AUTH_TO_DESK_DURATION_MS,
-  AuthToDeskTransition,
-} from "@/components/auth/auth-to-desk-transition";
-import { DESK_ENTRY_STORAGE_KEY } from "@/components/theme/desk-background";
+import { AuthToDeskTransition } from "@/components/auth/auth-to-desk-transition";
+import { AUTH_EXIT_MS, prepareDeskArrival } from "@/lib/dashboard/arrival";
+import { preloadDeskScene } from "@/lib/dashboard/preload";
 import { Button, GoogleIcon } from "@/components/ui";
 import { createServerSession } from "@/lib/auth/client";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
@@ -39,10 +37,6 @@ function authErrorMessage(error: unknown) {
   return messages[error.code] ?? "Autentikasi gagal. Coba lagi.";
 }
 
-function safeNextPath(value: string) {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
-
 export function AuthForm({
   mode,
   nextPath = "/dashboard",
@@ -50,48 +44,37 @@ export function AuthForm({
   mode: "login" | "register";
   nextPath?: string;
 }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
-  const [transitionUsername, setTransitionUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    router.prefetch(safeNextPath(nextPath));
-    router.prefetch("/onboarding");
-  }, [nextPath, router]);
 
   async function finish(user: Parameters<typeof createServerSession>[0]) {
+    preloadDeskScene(ownerDestination(nextPath));
     const session = await createServerSession(user);
-    const destination = safeNextPath(nextPath);
+    const destination = ownerDestination(nextPath);
 
     if (session.needsOnboarding) {
-      router.replace(`/onboarding?next=${encodeURIComponent(destination)}`);
-      router.refresh();
+      window.location.replace(`/onboarding?next=${encodeURIComponent(destination)}`);
       return;
     }
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    try {
-      window.sessionStorage.setItem(DESK_ENTRY_STORAGE_KEY, "1");
-    } catch {
-      // Session storage is only a visual hand-off hint; navigation must still work.
-    }
-
-    setTransitionUsername(session.user?.username ?? null);
+    prepareDeskArrival(destination);
     setTransitioning(true);
     await new Promise<void>((resolve) =>
-      window.setTimeout(resolve, reducedMotion ? 180 : AUTH_TO_DESK_DURATION_MS),
+      window.setTimeout(resolve, reducedMotion ? 0 : AUTH_EXIT_MS),
     );
-    router.replace(destination);
-    router.refresh();
+    // Session cookies were changed by a Route Handler. Start one fresh document
+    // request so pre-login Router Cache redirects cannot be replayed after login.
+    window.location.replace(destination);
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || transitioning) return;
     setBusy(true);
     setError(null);
 
@@ -108,12 +91,13 @@ export function AuthForm({
       }
     } catch (authError) {
       setError(authErrorMessage(authError));
-    } finally {
+      setTransitioning(false);
       setBusy(false);
     }
   }
 
   async function onGoogle() {
+    if (busy || transitioning) return;
     setBusy(true);
     setError(null);
 
@@ -126,14 +110,14 @@ export function AuthForm({
       await finish(credential.user);
     } catch (authError) {
       setError(authErrorMessage(authError));
-    } finally {
+      setTransitioning(false);
       setBusy(false);
     }
   }
 
   return (
     <>
-      <AuthToDeskTransition active={transitioning} username={transitionUsername} />
+      <AuthToDeskTransition active={transitioning} />
       <div className="auth-card__heading">
         <p className="ui-eyebrow">OWNER ACCESS</p>
         <h2>{mode === "login" ? "Masuk ke workspace" : "Buat akun owner"}</h2>
@@ -144,7 +128,7 @@ export function AuthForm({
         </p>
       </div>
 
-      <button className="auth-google-button" type="button" onClick={onGoogle} disabled={busy}>
+      <button className="auth-google-button" type="button" onClick={onGoogle} disabled={busy || transitioning}>
         <span className="auth-google-button__mark" aria-hidden="true"><GoogleIcon size={18} /></span>
         <span>Lanjut dengan Google</span>
       </button>
@@ -180,7 +164,7 @@ export function AuthForm({
 
         {error ? <p className="form-error" role="alert">{error}</p> : null}
 
-        <Button className="auth-submit" disabled={busy} type="submit" variant="primary">
+        <Button className="auth-submit" disabled={busy || transitioning} type="submit" variant="primary">
           {busy ? "Memproses..." : mode === "login" ? "Masuk" : "Buat akun"}
         </Button>
       </form>

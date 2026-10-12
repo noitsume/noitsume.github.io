@@ -20,3 +20,18 @@ export function energyAt(curve: number[], time: number, duration: number) {
 export function activeForegroundVolume(foreground: { id: string; volume: number } | null, sectionId?: string) {
   return foreground && sectionId && foreground.id === sectionId ? foreground.volume : 0;
 }
+
+/** One audible foreground: video > section music > continuous background. */
+export function soundtrackGains(normal: number, ducked: number, relativeDb: number, videoVolume: number, sectionPlaying: boolean, muted = false, backgroundVolume = 1, sectionVolume = 1) {
+  const backgroundLevel = Math.max(0, Math.min(1, backgroundVolume));
+  const sectionLevel = Math.max(0, Math.min(1, sectionVolume));
+  return {
+    background: musicGain(normal * backgroundLevel, ducked * backgroundLevel, relativeDb, videoVolume > 0 ? videoVolume : sectionPlaying ? .72 * sectionLevel : 0, muted),
+    section: musicGain(.72 * sectionLevel, .16 * sectionLevel, relativeDb, videoVolume, muted),
+  };
+}
+
+// Low-pass the accent, cap its amplitude in CSS, and never flash the whole page.
+export function smoothAccent(previous: number, target: number, dt: number) {
+  return previous + (Math.min(1, Math.max(0, target)) - previous) * (1 - Math.exp(-Math.min(.1, Math.max(0, dt)) / .24));
+}

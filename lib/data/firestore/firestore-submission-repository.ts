@@ -6,10 +6,9 @@ import {
   submissionSchema,
   type Media,
   type Submission,
-  type SubmissionStatus,
+  type SubmissionModeration,
 } from "@/lib/data/contracts";
 import type {
-  SubmissionApprovalResult,
   SubmissionCreateResult,
   SubmissionRepository,
 } from "@/lib/data/repositories";
@@ -27,6 +26,7 @@ function mapSubmission(id: string, data: DocumentData): Submission {
     status: data.status,
     submittedAt: toIsoString(data.submittedAt),
     reviewedAt: nullableIsoString(data.reviewedAt),
+    moderation: data.moderation ?? null,
   });
 }
 
@@ -145,12 +145,11 @@ export class FirestoreSubmissionRepository implements SubmissionRepository {
     });
   }
 
-  async approveWithMedia(
+  async claimModeration(
     roomId: string,
     submissionId: string,
-    media: Media[],
-    reviewedAt: string,
-  ): Promise<SubmissionApprovalResult> {
+    decision: SubmissionModeration,
+  ): Promise<Submission | null> {
     const db = firestoreDb();
     const roomRef = db.collection("rooms").doc(roomId);
     const submissionRef = roomRef.collection("submissions").doc(submissionId);
@@ -159,17 +158,64 @@ export class FirestoreSubmissionRepository implements SubmissionRepository {
       const parent = await transaction.get(roomRef);
       if (!parent.exists || parent.data()?.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sudah tidak tersedia.", 409);
       const snapshot = await transaction.get(submissionRef);
-      if (!snapshot.exists) return "not_found" as const;
+      if (!snapshot.exists) {
+        if (decision.action === "delete") return null;
+        throw new ApiError("SUBMISSION_NOT_FOUND", "Kiriman tidak ditemukan. Muat ulang Room.", 404);
+      }
 
       const current = mapSubmission(snapshot.id, snapshot.data()!);
-      if (current.status === "approved") return "exists" as const;
-      if (current.status !== "new") return "exists" as const;
+      if (current.source === "owner") throw new ApiError("OWNER_MEDIA_NOT_MODERATABLE", "Media pemilik tidak masuk antrean kiriman.", 409);
+      const ids = new Set([...current.mediaIds, ...current.stagedMedia.map(item => item.id)]);
+      if (decision.acceptedMediaIds.some(id => !ids.has(id))) throw new ApiError("INVALID_MEDIA_SELECTION", "Ada media yang tidak berasal dari kiriman ini. Muat ulang Room.", 400);
+      if (current.moderation) {
+        if (JSON.stringify(current.moderation) !== JSON.stringify(decision)) {
+          throw new ApiError("MODERATION_IN_PROGRESS", "Pilihan kiriman ini sedang diselesaikan. Muat ulang lalu tekan Lanjutkan penyimpanan untuk menyelesaikan pilihan sebelumnya.", 409);
+        }
+        return current;
+      }
+      if (current.status === "approved") {
+        if (decision.action === "approve" && JSON.stringify([...current.mediaIds].sort()) === JSON.stringify(decision.acceptedMediaIds)) return current;
+        throw new ApiError("APPROVED_MEDIA_PROTECTED", "Kiriman yang sudah diterima tetap disimpan agar tautan terbitan tidak rusak. Atur media yang ditampilkan melalui Studio.", 409);
+      }
+      if (current.status === "excluded" && decision.action !== "delete") {
+        if (decision.action === "exclude" || decision.acceptedMediaIds.length === 0) return current;
+        throw new ApiError("MODERATION_FINISHED", "Kiriman ini sudah diperiksa. Muat ulang Room.", 409);
+      }
+      transaction.update(submissionRef, { moderation: decision });
+      return { ...current, moderation: decision };
+    });
+  }
+
+  async finishModeration(roomId: string, submissionId: string, decision: SubmissionModeration, media: Media[], reviewedAt: string): Promise<Submission | null> {
+    const db = firestoreDb();
+    const roomRef = db.collection("rooms").doc(roomId);
+    const submissionRef = roomRef.collection("submissions").doc(submissionId);
+    return db.runTransaction(async transaction => {
+      const parent = await transaction.get(roomRef);
+      if (!parent.exists || parent.data()?.config?._deleting) throw new ApiError("ROOM_DELETING", "Room sudah tidak tersedia.", 409);
+      const snapshot = await transaction.get(submissionRef);
+      if (!snapshot.exists) return null;
+      const current = mapSubmission(snapshot.id, snapshot.data()!);
+      if (!current.moderation && current.status !== "new") return current;
+      if (JSON.stringify(current.moderation) !== JSON.stringify(decision)) throw new ApiError("MODERATION_CHANGED", "Pilihan kiriman berubah. Muat ulang Room.", 409);
+      const acceptedIds = new Set(decision.acceptedMediaIds);
+      if (JSON.stringify(media.map(item => item.id).sort()) !== JSON.stringify(decision.acceptedMediaIds)) throw new Error("Moderation media does not match the reserved selection.");
+      const allIds = new Set([...current.mediaIds, ...current.stagedMedia.map(item => item.id)]);
+      for (const id of allIds) {
+        if (!acceptedIds.has(id)) transaction.delete(roomRef.collection("media").doc(id));
+      }
+      if (decision.action === "delete") {
+        transaction.delete(submissionRef);
+        return null;
+      }
+      const status = decision.action === "approve" && (media.length > 0 || Boolean(current.message?.trim())) ? "approved" : "excluded";
 
       transaction.update(submissionRef, {
-        status: "approved",
+        status,
         reviewedAt: toTimestamp(reviewedAt),
         mediaIds: media.map((item) => item.id),
         stagedMedia: [],
+        moderation: null,
       });
 
       for (const item of media) {
@@ -178,40 +224,7 @@ export class FirestoreSubmissionRepository implements SubmissionRepository {
         transaction.set(roomRef.collection("media").doc(item.id), mediaDocument(item));
       }
 
-      return "updated" as const;
+      return { ...current, status, reviewedAt, mediaIds: media.map(item => item.id), stagedMedia: [], moderation: null };
     });
-  }
-
-  async updateStatuses(
-    roomId: string,
-    submissionIds: string[],
-    status: SubmissionStatus,
-    reviewedAt: string,
-    options?: { clearStagedMedia?: boolean; clearMediaIds?: boolean },
-  ): Promise<void> {
-    if (submissionIds.length === 0) return;
-    const db = firestoreDb();
-    const batch = db.batch();
-    const submissions = db.collection("rooms").doc(roomId).collection("submissions");
-
-    for (const id of submissionIds) {
-      batch.update(submissions.doc(id), {
-        status,
-        reviewedAt: toTimestamp(reviewedAt),
-        ...(options?.clearStagedMedia ? { stagedMedia: [] } : {}),
-        ...(options?.clearMediaIds ? { mediaIds: [] } : {}),
-      });
-    }
-
-    await batch.commit();
-  }
-
-  async deleteSubmission(roomId: string, submissionId: string): Promise<void> {
-    await firestoreDb()
-      .collection("rooms")
-      .doc(roomId)
-      .collection("submissions")
-      .doc(submissionId)
-      .delete();
   }
 }

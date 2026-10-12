@@ -32,7 +32,7 @@ test('energy interpolation clamps at timeline boundaries', () => {
 });
 test('guidance follows unfinished work and never hides published result', () => {
   assert.equal(workspaceGuidance('collecting',1,0).action,'review');
-  assert.equal(workspaceGuidance('closed',0,0).action,'upload');
+  assert.equal(workspaceGuidance('closed',0,0).action,'studio');
   assert.equal(workspaceGuidance('collecting',0,1).action,'close');
   assert.equal(workspaceGuidance('closed',0,1).action,'studio');
   assert.equal(roomDestination({id:'one',status:'ready'}).href,'/rooms/one/finish');

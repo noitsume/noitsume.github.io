@@ -2,7 +2,7 @@
 
 import { journeyLabel, roomDestination } from "@/lib/domain/journey";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { CreateRoomLauncher, RoomSortSelect } from "@/components/rooms";
 import {
@@ -48,12 +48,14 @@ function statusBadgeClass(status: DashboardRoomStatus) {
 function DashboardRoomCard({
   room,
   creatorName,
+  theme,
   busy,
   onTogglePin,
   onDeleteRoom,
 }: {
   room: Room;
   creatorName: string;
+  theme?: Theme;
   busy: boolean;
   onTogglePin: (room: Room) => void;
   onDeleteRoom: (room: Room) => void;
@@ -69,7 +71,12 @@ function DashboardRoomCard({
       tone="quiet"
       data-pinned={room.isPinned ? "true" : "false"}
     >
-      <div className="dashboard-room-card__cover">
+      <div className="dashboard-room-card__cover" style={{
+        "--room-accent": theme?.palette.accent,
+        "--room-surface": theme?.palette.surface,
+        "--room-light-x": `${58 + Array.from(room.id).reduce((n, c) => n + c.charCodeAt(0), 0) % 30}%`,
+      } as CSSProperties}>
+        <span className="dashboard-room-card__theme">{room.customThemeNameRaw || theme?.name || "Kenangin"}</span>
         <Badge className={`dashboard-room-card__status ${statusBadgeClass(derived)}`}>
           <span className="dashboard-room-card__status-dot" aria-hidden="true" />
           {derived === "ended" ? statusLabel(derived) : journeyLabel(room.status)}
@@ -276,6 +283,7 @@ function DashboardRoomSectionsState({
                 key={room.id}
                 room={room}
                 creatorName={creatorName}
+                theme={themes.find(theme => theme.id === room.themeId)}
                 busy={busyRoomIds.has(room.id)}
                 onTogglePin={togglePinned}
                 onDeleteRoom={deleteRoom}
@@ -304,6 +312,7 @@ function DashboardRoomSectionsState({
               key={room.id}
               room={room}
               creatorName={creatorName}
+              theme={themes.find(theme => theme.id === room.themeId)}
               busy={busyRoomIds.has(room.id)}
               onTogglePin={togglePinned}
               onDeleteRoom={deleteRoom}

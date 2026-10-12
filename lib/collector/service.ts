@@ -571,146 +571,82 @@ export async function moderateOwnedSubmissions(
   roomId: string,
   submissionIds: string[],
   action: "approve" | "exclude" | "delete",
+  acceptedMediaIds?: string[],
 ) {
   await requireOwnedRoom(ownerUid, roomId);
-
+  if (acceptedMediaIds !== undefined && (action !== "approve" || submissionIds.length !== 1)) {
+    throw new ApiError("INVALID_MEDIA_SELECTION", "Pilih media dari satu kiriman saja.", 400);
+  }
   const [allSubmissions, allMedia] = await Promise.all([
     backendRepositories.submissions.listByRoom(roomId),
     backendRepositories.media.listByRoom(roomId),
   ]);
-  const submissionById = new Map(allSubmissions.map((item) => [item.id, item]));
-  const mediaById = new Map(allMedia.map((item) => [item.id, item]));
-  const submissions = submissionIds.map((id) => submissionById.get(id));
-  if (submissions.some((item) => !item)) {
-    throw new ApiError("SUBMISSION_NOT_FOUND", "Ada submission yang tidak ditemukan.", 404);
-  }
+  const mediaById = new Map(allMedia.map(item => [item.id, item]));
+  const promotedMedia: Media[] = [];
+  const reviewedSubmissions: Submission[] = [];
+  const deletedSubmissionIds: string[] = [];
+  const removedMediaIds = new Set<string>();
 
-  const concreteSubmissions = submissions.filter((item): item is Submission => Boolean(item));
-  if (concreteSubmissions.some((item) => item.source === "owner")) {
-    throw new ApiError("OWNER_MEDIA_NOT_MODERATABLE", "Upload owner tidak masuk antrean moderation.", 409);
-  }
-
-  if (action === "delete" && submissions.some(item => item?.status === "approved")) {
-    throw new ApiError("APPROVED_MEDIA_PROTECTED", "Kiriman yang sudah diterima tetap disimpan agar tautan terbitan tidak rusak. Atur media yang ditampilkan melalui Studio.", 409);
-  }
-
-  if (action === "approve") {
-    const promotedMedia: Media[] = [];
-    let updated = 0;
-
-    for (const submission of concreteSubmissions) {
-      if (submission.status !== "new") continue;
-      const stagedMedia = legacyStagedMediaForSubmission(submission, allMedia);
-      const finalMedia = await Promise.all(stagedMedia.map(async (staged) => {
-        const finalObjectKey = permanentObjectKey(roomId, staged);
-        try {
-          await promotePrivateObject({
-            sourceKey: staged.storageObjectKey,
-            destinationKey: finalObjectKey,
-            expectedSizeBytes: staged.sizeBytes,
-            expectedContentType: staged.contentType,
-            cleanupSource: false,
-          });
-        } catch {
-          throw new ApiError(
-            "MEDIA_PROMOTION_FAILED",
-            `Media ${staged.originalFileName} belum berhasil dipindahkan ke inventori. Coba lagi.`,
-            502,
-          );
-        }
-
-        return mediaFromApprovedSubmission(
-          roomId,
-          submission,
-          staged,
-          finalObjectKey,
-          mediaById.get(staged.id),
-        );
-      }));
-
-      // Submission objects are staging only. Purge the whole submission prefix
-      // (including old B2 versions/orphans) before Firestore marks it approved.
-      // Every approved object has already been copied and verified under media/.
-      await deletePrivatePrefixCompletely(
-        `rooms/${roomId}/submissions/${submission.id}/`,
-      );
-
-      const result = await backendRepositories.submissions.approveWithMedia(
-        roomId,
-        submission.id,
-        finalMedia,
-        new Date().toISOString(),
-      );
-      if (result === "updated") {
-        updated += 1;
-        promotedMedia.push(...finalMedia);
-      }
-    }
-
-    const previewEntries = await Promise.all(
-      promotedMedia.map(async (item) => [
-        item.id,
-        await createPrivateDownloadUrl({ objectKey: item.storageObjectKey, expiresInSeconds: 900 }),
-      ] as const),
-    );
-
-    return {
-      updated,
-      promotedMedia,
-      previewUrlByMediaId: Object.fromEntries(previewEntries),
+  for (const id of new Set(submissionIds)) {
+    const original = allSubmissions.find(item => item.id === id);
+    if (!original && action !== "delete") throw new ApiError("SUBMISSION_NOT_FOUND", "Kiriman tidak ditemukan. Muat ulang Room.", 404);
+    const available = original ? legacyStagedMediaForSubmission(original, allMedia) : [];
+    const decision = {
+      action,
+      acceptedMediaIds: action === "approve" ? [...new Set(acceptedMediaIds ?? available.map(item => item.id))].sort() : [],
     };
-  }
-
-  if (action === "exclude") {
-    const candidates = concreteSubmissions.filter((item) => item.status === "new");
-    if (candidates.length === 0) return { updated: 0, promotedMedia: [], previewUrlByMediaId: {} };
-
-    const legacyMediaIds = new Set<string>();
-    for (const submission of candidates) {
-      if (submission.stagedMedia.length === 0) {
-        submission.mediaIds.forEach((id) => legacyMediaIds.add(id));
-      }
-
-      // Excluded submissions must leave no media bytes behind. Purging the
-      // entire staging prefix also catches interrupted/orphan upload objects.
-      await deletePrivatePrefixCompletely(
-        `rooms/${roomId}/submissions/${submission.id}/`,
-      );
+    // A durable Firestore decision serializes conflicting tabs before any B2
+    // deletion. The same decision can be retried after a network/server failure.
+    const submission = await backendRepositories.submissions.claimModeration(roomId, id, decision);
+    if (!submission) { deletedSubmissionIds.push(id); continue; }
+    if (!submission.moderation) {
+      reviewedSubmissions.push(submission);
+      // Another identical request may have committed after the initial list.
+      const committedMedia = await backendRepositories.media.listByRoom(roomId);
+      promotedMedia.push(...committedMedia.filter(item => submission.mediaIds.includes(item.id)));
+      continue;
     }
-
-    await backendRepositories.media.deleteMany(roomId, Array.from(legacyMediaIds));
-    await backendRepositories.submissions.updateStatuses(
-      roomId,
-      candidates.map((item) => item.id),
-      "excluded",
-      new Date().toISOString(),
-      { clearStagedMedia: true, clearMediaIds: true },
-    );
-
-    return { updated: candidates.length, promotedMedia: [], previewUrlByMediaId: {} };
-  }
-
-  let deleted = 0;
-  for (const submission of concreteSubmissions) {
-    await deletePrivatePrefixCompletely(
-      `rooms/${roomId}/submissions/${submission.id}/`,
-    );
     const staged = legacyStagedMediaForSubmission(submission, allMedia);
-    const permanent = allMedia.filter((item) => submission.mediaIds.includes(item.id));
-    const keys = new Set([
-      ...staged.map((item) => item.storageObjectKey),
-      ...permanent.map((item) => item.storageObjectKey),
-    ]);
-    await deletePrivateObjects(Array.from(keys));
-    await backendRepositories.media.deleteMany(
-      roomId,
-      Array.from(new Set([...submission.mediaIds, ...staged.map((item) => item.id)])),
-    );
-    await backendRepositories.submissions.deleteSubmission(roomId, submission.id);
-    deleted += 1;
+    const accepted = new Set(decision.acceptedMediaIds);
+    if (decision.acceptedMediaIds.some(mediaId => !staged.some(item => item.id === mediaId))) {
+      throw new ApiError("MEDIA_NOT_FOUND", "Data media tidak lengkap. Muat ulang Room sebelum melanjutkan.", 409);
+    }
+    const finalMedia: Media[] = [];
+    // Complete and verify accepted copies first. A retry can recover from these
+    // destination objects even if staging was purged before Firestore committed.
+    for (const item of staged.filter(item => accepted.has(item.id))) {
+      const destinationKey = permanentObjectKey(roomId, item);
+      try {
+        await promotePrivateObject({ sourceKey: item.storageObjectKey, destinationKey, expectedSizeBytes: item.sizeBytes, expectedContentType: item.contentType, cleanupSource: false });
+      } catch {
+        throw new ApiError("MEDIA_PROMOTION_FAILED", `Media ${item.originalFileName} belum berhasil disimpan. Lanjutkan penyimpanan dengan pilihan yang sama.`, 502);
+      }
+      finalMedia.push(mediaFromApprovedSubmission(roomId, submission, item, destinationKey, mediaById.get(item.id)));
+    }
+    const rejected = staged.filter(item => !accepted.has(item.id));
+    const rejectedKeys = new Set(rejected.flatMap(item => [item.storageObjectKey, permanentObjectKey(roomId, item)]));
+    // Include legacy media docs and copies left by an interrupted old approval.
+    for (const mediaId of submission.mediaIds) {
+      if (!accepted.has(mediaId) && mediaById.has(mediaId)) rejectedKeys.add(mediaById.get(mediaId)!.storageObjectKey);
+    }
+    try {
+      await deletePrivateObjects([...rejectedKeys]);
+      await deletePrivatePrefixCompletely(`rooms/${roomId}/submissions/${submission.id}/`);
+    } catch {
+      throw new ApiError("MEDIA_CLEANUP_FAILED", "Penghapusan file belum tuntas. Pilihanmu tersimpan; tekan Lanjutkan penyimpanan untuk mencoba lagi.", 502);
+    }
+    // One Firestore transaction clears staging metadata, deletes rejected legacy
+    // docs, and exposes only the accepted media to Studio/Receiver.
+    const reviewed = await backendRepositories.submissions.finishModeration(roomId, submission.id, decision, finalMedia, new Date().toISOString());
+    for (const mediaId of [...submission.mediaIds, ...staged.map(item => item.id)]) {
+      if (!accepted.has(mediaId)) removedMediaIds.add(mediaId);
+    }
+    if (reviewed) reviewedSubmissions.push(reviewed);
+    else deletedSubmissionIds.push(submission.id);
+    promotedMedia.push(...finalMedia);
   }
-
-  return { updated: deleted, promotedMedia: [], previewUrlByMediaId: {} };
+  const previewEntries = await Promise.all(promotedMedia.map(async item => [item.id, await createPrivateDownloadUrl({ objectKey: item.storageObjectKey, expiresInSeconds: 900 })] as const));
+  return { updated: reviewedSubmissions.length + deletedSubmissionIds.length, promotedMedia, reviewedSubmissions, deletedSubmissionIds, removedMediaIds: [...removedMediaIds], previewUrlByMediaId: Object.fromEntries(previewEntries) };
 }
 
 export async function getOwnedPreviewUrls(

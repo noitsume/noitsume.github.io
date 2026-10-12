@@ -1,29 +1,18 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import {
-  AUTH_TO_DESK_DURATION_MS,
-  AuthToDeskTransition,
-} from "@/components/auth/auth-to-desk-transition";
-import { DESK_ENTRY_STORAGE_KEY } from "@/components/theme/desk-background";
+import { useState, type FormEvent } from "react";
+import { ownerDestination } from "@/lib/auth/destination";
+import { AuthToDeskTransition } from "@/components/auth/auth-to-desk-transition";
+import { AUTH_EXIT_MS, prepareDeskArrival } from "@/lib/dashboard/arrival";
+import { preloadDeskScene } from "@/lib/dashboard/preload";
 import { Button } from "@/components/ui";
 import { saveOwnerUsername } from "@/lib/auth/client";
 
-function safeNextPath(value: string) {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
-
 export function UsernameOnboarding({ nextPath = "/dashboard" }: { nextPath?: string }) {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
-
-  useEffect(() => {
-    router.prefetch(safeNextPath(nextPath));
-  }, [nextPath, router]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,23 +28,21 @@ export function UsernameOnboarding({ nextPath = "/dashboard" }: { nextPath?: str
     setError(null);
 
     try {
+      preloadDeskScene(ownerDestination(nextPath));
       await saveOwnerUsername(cleanUsername);
 
-      try {
-        window.sessionStorage.setItem(DESK_ENTRY_STORAGE_KEY, "1");
-      } catch {
-        // Navigation does not depend on this visual hand-off hint.
-      }
+      const destination = ownerDestination(nextPath);
+      prepareDeskArrival(destination);
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       setTransitioning(true);
       await new Promise<void>((resolve) =>
-        window.setTimeout(resolve, reducedMotion ? 180 : AUTH_TO_DESK_DURATION_MS),
+        window.setTimeout(resolve, reducedMotion ? 0 : AUTH_EXIT_MS),
       );
 
-      router.replace(safeNextPath(nextPath));
-      router.refresh();
+      window.location.replace(destination);
     } catch (submitError) {
+      setTransitioning(false);
       setError(
         submitError instanceof Error
           ? submitError.message
@@ -67,7 +54,7 @@ export function UsernameOnboarding({ nextPath = "/dashboard" }: { nextPath?: str
 
   return (
     <>
-      <AuthToDeskTransition active={transitioning} username={username.replace(/\s+/g, " ").trim()} />
+      <AuthToDeskTransition active={transitioning} />
       <div className="auth-card__heading auth-card__heading--onboarding">
         <p className="ui-eyebrow">SATU LANGKAH TERAKHIR</p>
         <h2>Kamu mau dipanggil apa?</h2>

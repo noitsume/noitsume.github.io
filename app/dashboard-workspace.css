@@ -1,0 +1,128 @@
+/* Dashboard opt-in: source login styles and other workspace routes stay independent. */
+.desk-auth-exit {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  pointer-events: none;
+  background: #100f0d;
+  animation: desk-auth-close 160ms ease-out both;
+}
+html[data-theme="light"] .desk-auth-exit { background: #eeeae2; }
+@keyframes desk-auth-close { from { opacity: 0; } to { opacity: 1; } }
+
+.dashboard-desk { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; }
+.dashboard-desk__fallback, .dashboard-desk__canvas, .dashboard-desk__vignette { position: absolute; inset: 0; }
+.dashboard-desk__fallback {
+  background:
+    repeating-linear-gradient(1deg, transparent 0 4px, rgb(226 183 124 / .018) 5px, transparent 6px 10px),
+    radial-gradient(ellipse at 76% 24%, #292118, #12110f 67%, #0a0a09);
+  transition: opacity 240ms ease, visibility 0s 240ms;
+}
+.dashboard-desk__pool {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 40% 63% at 74% 23%, rgb(255 199 125 / .2), rgb(255 199 125 / .07) 42%, transparent 78%);
+}
+.dashboard-desk__beam {
+  position: absolute; width: min(62vw, 970px); height: 78vh; top: -10%; right: 3%;
+  background: conic-gradient(from 188deg at 85% 13%, transparent, rgb(255 211 150 / .1) 13deg, rgb(255 211 150 / .13) 29deg, transparent 52deg);
+  mask-image: radial-gradient(ellipse at 73% 15%, #000 16%, rgb(0 0 0 / .6) 40%, transparent 72%);
+  filter: blur(12px);
+}
+.dashboard-desk__lamp {
+  position: absolute; right: 6.5%; top: -13px; width: 96px; height: 44px; border-radius: 50%; transform: rotate(-28deg);
+  background: radial-gradient(ellipse, #ffe2b0, #927148 38%, #363029 44%, #191714 70%);
+  box-shadow: 0 4px 35px rgb(255 199 125 / .18);
+}
+.dashboard-desk__canvas { opacity: 0; transition: opacity 240ms ease; }
+.dashboard-desk[data-ready="true"] .dashboard-desk__canvas { opacity: 1; }
+.dashboard-desk[data-ready="true"] .dashboard-desk__fallback { opacity: 0; visibility: hidden; }
+.dashboard-desk__vignette {
+  background: radial-gradient(ellipse at 65% 34%, transparent 20%, rgb(6 6 5 / .2) 76%, rgb(6 6 5 / .42));
+}
+html[data-theme="light"] .dashboard-desk__fallback {
+  background: repeating-linear-gradient(1deg, transparent 0 4px, rgb(105 83 51 / .024) 5px, transparent 6px 10px), #eeeae2;
+}
+html[data-theme="light"] .dashboard-desk__pool { background: radial-gradient(ellipse at 15% 85%, rgb(255 247 217 / .72), transparent 68%); }
+html[data-theme="light"] .dashboard-desk__beam, html[data-theme="light"] .dashboard-desk__lamp { display: none; }
+html[data-theme="light"] .dashboard-desk__vignette { background: radial-gradient(ellipse at 30% 70%, transparent 40%, rgb(82 63 42 / .06)); }
+
+/* Pre-paint gate is released by readiness, first input, or the bootstrap deadline. */
+html[data-desk-entry="pending"] .app-shell--desk-studio > .top-navbar,
+html[data-desk-entry="pending"] .app-shell--desk-studio > .app-shell__body { opacity: 0; }
+html[data-desk-entry="running"] .app-shell--desk-studio :is(.top-navbar, .app-shell__left, .app-shell__main, .app-shell__right) { will-change: transform, opacity; }
+
+.app-shell--desk-studio { --desk-panel: 26 24 21; --desk-edge: 255 223 175; }
+html[data-theme="light"] .app-shell--desk-studio { --desk-panel: 255 252 246; --desk-edge: 168 125 72; }
+:root .app-shell--desk-studio .dashboard-hero {
+  position: relative; padding: clamp(24px, 2.2vw, 32px); gap: 22px;
+  background: linear-gradient(120deg, rgb(var(--desk-panel) / .82), rgb(var(--desk-panel) / .58));
+  border-color: rgb(var(--desk-edge) / .1);
+  box-shadow: inset 0 1px rgb(var(--desk-edge) / .06), 0 16px 42px rgb(0 0 0 / .07);
+}
+.app-shell--desk-studio .dashboard-hero__title-row h1 { max-width: 22ch; font-size: clamp(30px, 2.6vw, 44px); letter-spacing: -.045em; line-height: 1.09; }
+.app-shell--desk-studio .dashboard-hero__copy > p:last-child { max-width: 59ch; font-size: 14px; line-height: 1.65; margin-top: 13px; }
+.app-shell--desk-studio .dashboard-stats { padding-top: 22px; border-top: 1px solid rgb(var(--desk-edge) / .09); }
+:root .app-shell--desk-studio .dashboard-stat { padding-inline: 22px; border-color: rgb(var(--desk-edge) / .1); background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.app-shell--desk-studio .dashboard-stat:first-child { padding-left: 0; }
+.app-shell--desk-studio .dashboard-stat strong { font-size: 27px; font-weight: 550; }
+.app-shell--desk-studio .dashboard-stat .ui-eyebrow { font-size: 10px; letter-spacing: .11em; }
+.app-shell--desk-studio .dashboard-search { margin: 0; gap: 16px; }
+.app-shell--desk-studio .dashboard-search input { background: rgb(var(--desk-panel) / .75); border-color: rgb(var(--desk-edge) / .13); transition: border-color 160ms ease, box-shadow 160ms ease; }
+.app-shell--desk-studio .dashboard-search input:focus { border-color: rgb(var(--coral-rgb) / .65); box-shadow: 0 0 0 3px rgb(var(--coral-rgb) / .09); }
+.app-shell--desk-studio .dashboard-search span { white-space: nowrap; font-size: 12px; }
+:root .app-shell--desk-studio .dashboard-room-card {
+  border-color: rgb(var(--desk-edge) / .12); border-radius: 16px;
+  background: rgb(var(--desk-panel) / .83);
+  box-shadow: inset 0 1px rgb(var(--desk-edge) / .07), 0 6px 20px rgb(0 0 0 / .08);
+}
+.app-shell--desk-studio .dashboard-room-card:has(.dashboard-room-menu[open]) { overflow: visible; z-index: 4; }
+.app-shell--desk-studio .dashboard-room-card:has(.dashboard-room-menu[open]) .dashboard-room-card__cover { border-radius: 15px 15px 0 0; }
+:root .app-shell--desk-studio .dashboard-room-card__cover {
+  --room-accent: #f4b35e; --room-surface: #34271c; --room-light-x: 76%;
+  min-height: 100px; flex-basis: 100px;
+  background:
+    radial-gradient(ellipse at var(--room-light-x) 18%, color-mix(in srgb, var(--room-accent), transparent 62%), transparent 67%),
+    linear-gradient(135deg, color-mix(in srgb, var(--room-surface), #171410 42%), #1b1712);
+}
+.app-shell--desk-studio .dashboard-room-card__cover::before {
+  content: ""; position: absolute; width: 72%; height: 165%; right: -10%; top: -55%; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--room-accent), transparent 75%); transform: rotate(-24deg);
+  box-shadow: 0 0 0 18px color-mix(in srgb, var(--room-accent), transparent 97%), 0 0 0 42px color-mix(in srgb, var(--room-accent), transparent 97%);
+}
+.app-shell--desk-studio .dashboard-room-card__theme { position: absolute; bottom: 12px; left: 16px; right: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: rgb(255 242 221 / .65); font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; z-index: 1; }
+.app-shell--desk-studio .dashboard-room-card__content { padding: 18px; }
+.app-shell--desk-studio .dashboard-room-card__content h3 { white-space: normal; overflow-wrap: anywhere; font-size: 19px; line-height: 1.3; font-weight: 600; letter-spacing: -.025em; }
+.app-shell--desk-studio .dashboard-room-card__recipient { margin-top: 8px; }
+.app-shell--desk-studio .dashboard-room-card__expiry { font-size: 11px; opacity: .85; }
+.app-shell--desk-studio .dashboard-room-card__actions { padding-top: 22px; }
+.app-shell--desk-studio .dashboard-room-card__open { min-height: 39px; font-size: 12px; background: rgb(var(--desk-edge) / .055); border-color: rgb(var(--desk-edge) / .1); }
+.app-shell--desk-studio .dashboard-room-card__pin { color: #e8d5ba; background: rgb(26 24 21 / .62); border-color: rgb(255 226 176 / .18); box-shadow: none; }
+.app-shell--desk-studio .dashboard-room-card__pin[data-pinned="true"] { color: #ffc77d; background: rgb(255 199 125 / .16); }
+.app-shell--desk-studio .create-room-card { border-radius: 16px; border: 1px dashed rgb(var(--desk-edge) / .2); background: rgb(var(--desk-panel) / .3); box-shadow: none; }
+.app-shell--desk-studio .create-room-card__plus { width: 45px; height: 45px; font-size: 25px; border-radius: 50%; background: rgb(var(--coral-rgb) / .1); }
+.app-shell--desk-studio .create-room-card h3 { font-size: 18px; }
+.app-shell--desk-studio .create-room-card p { max-width: 23ch; font-size: 12px; line-height: 1.6; }
+.app-shell--desk-studio .dashboard-rail__panel { background: rgb(var(--desk-panel) / .52); border-color: rgb(var(--desk-edge) / .08); box-shadow: inset 0 1px rgb(var(--desk-edge) / .035); }
+.app-shell--desk-studio .dashboard-rail__panel h3 { font-size: 18px; letter-spacing: -.025em; }
+.app-shell--desk-studio .dashboard-rail .viewer-hero > strong { font-weight: 500; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .app-shell--desk-studio .dashboard-room-card:hover { transform: translateY(-2px); border-color: rgb(var(--desk-edge) / .27); background: rgb(var(--desk-panel) / .9); box-shadow: 0 12px 26px rgb(0 0 0 / .14), inset 0 1px rgb(var(--desk-edge) / .12); }
+}
+@media (max-width: 760px) {
+  :root .app-shell--desk-studio .dashboard-hero { padding: 24px; gap: 20px; }
+  .app-shell--desk-studio .dashboard-stat:nth-child(3) { padding-left: 0; }
+  .app-shell--desk-studio .dashboard-search { gap: 10px; }
+  .dashboard-desk__beam { width: 100%; right: -28%; }
+}
+@media (max-width: 420px) {
+  :root .app-shell--desk-studio .dashboard-hero { padding: 22px 18px; }
+  .app-shell--desk-studio .dashboard-search { flex-wrap: wrap; }
+  .app-shell--desk-studio .dashboard-search input { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desk-auth-exit { animation: none; }
+  .dashboard-desk__canvas, .dashboard-desk__fallback { transition: none; }
+  html[data-desk-entry] .app-shell--desk-studio > .top-navbar,
+  html[data-desk-entry] .app-shell--desk-studio > .app-shell__body { opacity: 1; }
+  .app-shell--desk-studio .dashboard-room-card { transition: none; transform: none; }
+}

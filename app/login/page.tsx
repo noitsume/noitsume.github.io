@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ownerDestination } from "@/lib/auth/destination";
 import { AuthForm, AuthShell } from "@/components/auth";
 import { getOwnerSession } from "@/lib/auth/session";
 
@@ -11,10 +12,9 @@ type LoginPageProps = {
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const existingSession = await getOwnerSession();
-  if (existingSession) redirect("/dashboard");
-
   const { next } = await searchParams;
+  const existingSession = await getOwnerSession();
+  if (existingSession) redirect(ownerDestination(next));
 
   return (
     <AuthShell

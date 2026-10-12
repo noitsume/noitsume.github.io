@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { AmbientBackground, ThemeToggle } from "@/components/theme";
 import { brand } from "@/config/brand";
 
@@ -30,8 +31,7 @@ export function AuthShell({
 
       <header className="auth-navbar">
         <Link className="brand-lockup" href="/" aria-label={brand.name}>
-          <span className="brand-mark" aria-hidden="true"><span>{brand.shortName}</span></span>
-          <strong>{brand.name}</strong>
+          <BrandLogo />
         </Link>
         <ThemeToggle />
       </header>

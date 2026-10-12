@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   auraIdSchema,
   roomMusicIdSchema,
-  songIdSchema,
   themeIdSchema,
   transitionIdSchema,
 } from "./ids";
@@ -103,30 +102,9 @@ export const songBeatmapSchema = z.object({
   }),
 });
 
-export const songDefinitionSchema = z.object({
-  schemaVersion: z.literal(1),
-  id: songIdSchema,
-  name: z.string().min(1),
-  artist: z.string().min(1),
-  hash: z.string().regex(/^[a-f0-9]{64}$/),
-  track: creativeAssetReferenceSchema,
-  beatmap: creativeAssetReferenceSchema,
-  durationSec: z.number().positive(),
-  bpm: z.number().positive(),
-  mood: z.array(z.string().min(1)).min(1),
-  compatibleThemes: z.array(themeIdSchema).min(1),
-  sections: z.object({
-    intro: songSectionRangeSchema,
-    build: songSectionRangeSchema,
-    peak: songSectionRangeSchema,
-    outro: songSectionRangeSchema,
-  }),
-});
-
-
 export const roomMusicAnalysisSchema = z.object({
   status: z.enum(["pending", "ready", "fallback"]),
-  version: z.literal("music-v1").nullable(),
+  version: z.enum(["music-v1", "music-v2"]).nullable(),
   failureCode: z.enum(["decode_failed", "analysis_failed"]).nullable(),
   hash: z.string().regex(/^[a-f0-9]{64}$/).nullable(),
   durationSec: z.number().positive().nullable(),
@@ -160,16 +138,12 @@ export const roomMusicSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
-export const backgroundMusicSelectionSchema = z.discriminatedUnion("source", [
-  z.object({
-    source: z.literal("catalog"),
-    songId: songIdSchema,
-  }),
-  z.object({
-    source: z.literal("room-upload"),
-    musicId: roomMusicIdSchema,
-  }),
-]);
+export const backgroundMusicSelectionSchema = z.object({
+  source: z.literal("room-upload"),
+  musicId: roomMusicIdSchema,
+  // Optional for existing drafts/snapshots; omitted means the original level.
+  volume: z.number().min(0).max(1).optional(),
+});
 
 export const backgroundMusicMixPolicySchema = z.object({
   playbackMode: z.literal("continuous"),
@@ -199,7 +173,7 @@ export const sectionAudioMixInstructionSchema = z.object({
 
 export const creativeSelectionSchema = z.object({
   themeId: themeIdSchema,
-  backgroundMusic: backgroundMusicSelectionSchema,
+  backgroundMusic: backgroundMusicSelectionSchema.nullable(),
   auraIds: z.array(auraIdSchema),
   transitionIds: z.array(transitionIdSchema),
 });
@@ -210,7 +184,6 @@ export type ThemePersonality = z.infer<typeof themePersonalitySchema>;
 export type AuraDefinition = z.infer<typeof auraDefinitionSchema>;
 export type TransitionDefinition = z.infer<typeof transitionDefinitionSchema>;
 export type SongBeatmap = z.infer<typeof songBeatmapSchema>;
-export type SongDefinition = z.infer<typeof songDefinitionSchema>;
 export type RoomMusic = z.infer<typeof roomMusicSchema>;
 export type BackgroundMusicSelection = z.infer<typeof backgroundMusicSelectionSchema>;
 export type BackgroundMusicMixPolicy = z.infer<typeof backgroundMusicMixPolicySchema>;

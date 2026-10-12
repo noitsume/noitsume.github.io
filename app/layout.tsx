@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider, ThemeScript } from "@/components/theme";
 import { brand } from "@/config/brand";
+import { deskArrivalBootstrap } from "@/lib/dashboard/arrival";
 import "./globals.css";
 import "./production.css";
+import "./aura-receiver.css";
+import "./dashboard-workspace.css";
 
 export const metadata: Metadata = {
+  applicationName: brand.name,
   title: {
     default: brand.name,
     template: `%s · ${brand.name}`,
@@ -27,6 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="id" suppressHydrationWarning>
       <head>
         <ThemeScript />
+        <script dangerouslySetInnerHTML={{ __html: deskArrivalBootstrap }} />
       </head>
       <body>
         <ThemeProvider>{children}</ThemeProvider>

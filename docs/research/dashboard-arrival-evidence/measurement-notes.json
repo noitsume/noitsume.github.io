@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-12",
+  "notes": [
+    "Development server. Synthetic source-matched DOM/CSS replay, not an end-to-end login test.",
+    "No FPS or GPU time claims; requestAnimationFrame intervals are scheduling observations.",
+    "Run 1 had tracing and the Igloo reference tab open. Run 2 had no trace and reference tab closed.",
+    "Actual authentication attempt did not reach session creation: missing public Firebase configuration. No real account credentials were used.",
+    "Chrome DevTools native file export was denied by the connector workspace-root configuration. Summary outputs recorded; no raw trace artifact is claimed."
+  ],
+  "run1": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Script ran on page and returned:\n```json\n{\"method\":\"DOM/CSS replay of AuthToDeskTransition; bypasses authentication, React mounting and destination navigation\",\"viewport\":{\"w\":1365,\"h\":900,\"dpr\":1},\"visibility\":\"visible\",\"theme\":\"dark\",\"durationMs\":9750.80000000447,\"phases\":[{\"name\":\"prelude\",\"samples\":142,\"p50Ms\":20.799999999999272,\"p95Ms\":76.39999999999964,\"maxMs\":152.70000000000073,\"intervalsOver33_4ms\":30},{\"name\":\"camera\",\"samples\":166,\"p50Ms\":20.700000000000728,\"p95Ms\":90.20000000000073,\"maxMs\":604,\"intervalsOver33_4ms\":43}],\"longTasks\":[]}\n```"
+      }
+    ]
+  },
+  "run2": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Script ran on page and returned:\n```json\n{\"method\":\"DOM/CSS replay; no trace; reference tab closed; excludes auth, React mounting, destination loading\",\"viewport\":{\"w\":1365,\"h\":900,\"dpr\":1},\"visibility\":\"visible\",\"theme\":\"dark\",\"phases\":[{\"name\":\"prelude\",\"samples\":323,\"p50Ms\":13.60000000000582,\"p95Ms\":34.69999999999709,\"maxMs\":124.90000000000873,\"intervalsOver33_4ms\":18},{\"name\":\"camera\",\"samples\":515,\"p50Ms\":7,\"p95Ms\":27.69999999999709,\"maxMs\":83.40000000000873,\"intervalsOver33_4ms\":17}],\"longTasks\":[]}\n```"
+      }
+    ]
+  }
+}

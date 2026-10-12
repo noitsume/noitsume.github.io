@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ownerDestination } from "@/lib/auth/destination";
 import { AuthShell, UsernameOnboarding } from "@/components/auth";
 import { getOwnerSession } from "@/lib/auth/session";
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
@@ -10,15 +11,9 @@ type OnboardingPageProps = {
   searchParams: Promise<{ next?: string }>;
 };
 
-function safeNextPath(value?: string) {
-  return value && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/dashboard";
-}
-
 export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
   const { next } = await searchParams;
-  const destination = safeNextPath(next);
+  const destination = ownerDestination(next);
   const session = await getOwnerSession();
 
   if (!session) {

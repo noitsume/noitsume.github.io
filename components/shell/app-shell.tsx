@@ -6,13 +6,13 @@ import { Sidebar } from "./sidebar";
 import { TopNavbar } from "./top-navbar";
 import type { ShellUser } from "./profile-menu";
 
-export function AppShell({ user, children, rightRail, hideSidebar = false }: {
-  user: ShellUser; children: ReactNode; rightRail?: ReactNode; hideSidebar?: boolean;
+export function AppShell({ user, children, rightRail, hideSidebar = false, background, className = "" }: {
+  user: ShellUser; children: ReactNode; rightRail?: ReactNode; hideSidebar?: boolean; background?: ReactNode; className?: string;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  return <div className={["app-shell", rightRail ? "" : "app-shell--no-rail", hideSidebar ? "app-shell--focus" : ""].filter(Boolean).join(" ")}>
+  return <div className={["app-shell", rightRail ? "" : "app-shell--no-rail", hideSidebar ? "app-shell--focus" : "", className].filter(Boolean).join(" ")}>
     <a className="skip-link" href="#main-content">Lewati ke isi halaman</a>
-    <DeskBackground />
+    {background ?? <DeskBackground />}
     <TopNavbar user={user} onOpenMenu={() => setMobileOpen(true)} showMenuButton={!hideSidebar} />
     <div className="app-shell__body">
       {!hideSidebar ? <div className="app-shell__left"><Sidebar /></div> : null}

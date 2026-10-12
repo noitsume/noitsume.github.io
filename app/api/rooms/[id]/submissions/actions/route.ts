@@ -13,7 +13,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const session = await requireOwnerSession();
     const { id } = await context.params;
     const input = ownerSubmissionActionSchema.parse(await request.json());
-    const result = await moderateOwnedSubmissions(session.uid, id, input.submissionIds, input.action);
+    const result = await moderateOwnedSubmissions(session.uid, id, input.submissionIds, input.action, input.acceptedMediaIds);
     return apiOk({ ...result, action: input.action }, requestId);
   } catch (error) {
     return apiErrorResponse(error, requestId, "POST /api/rooms/[id]/submissions/actions");

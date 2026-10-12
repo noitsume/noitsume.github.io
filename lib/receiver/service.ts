@@ -1,9 +1,8 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   assertCreativeSelection,
-  resolveSong,
   resolveTheme,
   type CreativeAssetReference,
   type RoomMusic,
@@ -17,6 +16,7 @@ import {
   type ReceiverManifest,
   type ReceiverManifestDraft,
   type ReceiverMediaDescriptor,
+  type ReceiverMusicSnapshot,
   type ReceiverWish,
   type Room,
   type Submission,
@@ -24,13 +24,14 @@ import {
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
 import { ApiError } from "@/lib/http";
 import { getOwnedRoom } from "@/lib/rooms";
-import { createPrivateDownloadUrl, headPrivateObject } from "@/lib/storage";
+import { createPrivateDownloadUrl, headPrivateObject, writePrivateJson } from "@/lib/storage";
 import {
   experienceDnaSchema,
   type ExperienceDNA,
   type RoomStudioConfig,
 } from "@/lib/studio/contracts";
 import { getRoomStudioConfig, isStudioReadyForBake } from "@/lib/studio/service";
+import { sectionProblems } from "@/lib/studio/authoring";
 
 function createReceiverId() {
   return `receiver_${randomBytes(10).toString("hex")}`;
@@ -51,7 +52,7 @@ function setsEqual(a: Set<string>, b: Set<string>) {
 }
 
 function assertExperienceReferencesSelectedMedia(experience: ExperienceDNA, studio: RoomStudioConfig) {
-  const selected = new Set(studio.selectedMedia.map((item) => item.mediaId));
+  const selected = new Set(studio.authoringVersion === 2 ? studio.sectionPlan.flatMap(section => section.mediaIds) : studio.selectedMedia.map((item) => item.mediaId));
   const referencedIds: string[] = [];
   const sectionIds = new Set<string>();
 
@@ -64,7 +65,7 @@ function assertExperienceReferencesSelectedMedia(experience: ExperienceDNA, stud
   }
 
   const referenced = new Set(referencedIds);
-  if (referencedIds.length !== referenced.size) {
+  if (studio.authoringVersion !== 2 && referencedIds.length !== referenced.size) {
     throw new ApiError("DUPLICATE_EXPERIENCE_MEDIA", "Satu media dipakai lebih dari sekali pada execution plan final.", 409);
   }
   if (!setsEqual(selected, referenced)) {
@@ -193,7 +194,10 @@ function addMediaAssets(
       storageObjectKey: item.storageObjectKey,
       mediaId: item.id,
     }));
+    const audioBeatmapAssetId = item.audioBeatmap ? assetId("asset", "beatmap", item.id, createHash("sha256").update(item.audioBeatmap.storageObjectKey).digest("hex")) : undefined;
+    if (audioBeatmapAssetId && item.audioBeatmap) addCreativeAsset(receiverId, { id: audioBeatmapAssetId, source: "b2", storageObjectKey: item.audioBeatmap.storageObjectKey, contentType: "application/json" }, "beatmap", audioBeatmapAssetId, assets, descriptors);
     return {
+      ...(audioBeatmapAssetId ? { audioBeatmapAssetId, audioDurationSec: item.audioBeatmap!.durationSec } : {}),
       id: item.id,
       assetId: id,
       type: item.type,
@@ -243,54 +247,40 @@ function addCreativeAsset(
   }));
 }
 
-function buildMusicSnapshot(
+async function buildMusicSnapshot(
   receiverId: string,
-  studio: RoomStudioConfig,
-  roomMusic: RoomMusic | null,
+  roomMusic: RoomMusic,
   assets: ReceiverAssetRecord[],
   descriptors: ReceiverAssetDescriptor[],
-) {
-  const selection = studio.backgroundMusic;
-  if (!selection) throw new ApiError("BACKGROUND_MUSIC_REQUIRED", "Background music belum dipilih.", 409);
-
-  if (selection.source === "catalog") {
-    const song = resolveSong(selection.songId);
-    if (!song) throw new ApiError("SONG_NOT_FOUND", "Template background music tidak tersedia.", 409);
-    const trackAssetId = assetId("asset", "music", song.id, "track");
-    const beatmapAssetId = assetId("asset", "music", song.id, "beatmap");
-    addCreativeAsset(receiverId, song.track, "music", trackAssetId, assets, descriptors);
-    addCreativeAsset(receiverId, song.beatmap, "beatmap", beatmapAssetId, assets, descriptors);
-    return {
-      name: song.name,
-      trackAssetId,
-      bpm: song.bpm,
-      durationSec: song.durationSec,
-      mood: song.mood,
-      beatmapSource: "asset" as const,
-      beatmapAssetId,
-      beats: [],
-      onsets: [],
-      energyCurve: [],
-    };
-  }
-
-  if (!roomMusic || roomMusic.id !== selection.musicId || roomMusic.analysis.status !== "ready") {
-    throw new ApiError("ROOM_MUSIC_NOT_READY", "Background music upload belum selesai dianalisis.", 409);
+  publish: boolean,
+): Promise<ReceiverMusicSnapshot> {
+  if (roomMusic.analysis.status !== "ready") {
+    throw new ApiError("ROOM_MUSIC_NOT_READY", `Siapkan beatmap untuk ${roomMusic.name} terlebih dahulu.`, 409);
   }
   const trackAssetId = assetId("asset", "music", roomMusic.id, "track");
   addCreativeAsset(receiverId, roomMusic.track, "music", trackAssetId, assets, descriptors);
-  return {
+  const base = {
     name: roomMusic.name,
     trackAssetId,
     bpm: roomMusic.analysis.bpm,
     durationSec: roomMusic.analysis.durationSec,
     mood: roomMusic.analysis.mood,
-    beatmapSource: "inline" as const,
-    beatmapAssetId: null,
-    beats: roomMusic.analysis.beats,
-    onsets: roomMusic.analysis.onsets,
-    energyCurve: roomMusic.analysis.energyCurve,
   };
+  const beatmap = { beats: roomMusic.analysis.beats, onsets: roomMusic.analysis.onsets, energyCurve: roomMusic.analysis.energyCurve };
+  if (roomMusic.analysis.version === "music-v2" && roomMusic.beatmap) {
+    const beatmapAssetId = assetId("asset", "beatmap", roomMusic.id, roomMusic.beatmap.id);
+    addCreativeAsset(receiverId, roomMusic.beatmap, "beatmap", beatmapAssetId, assets, descriptors);
+    return { ...base, beatmapSource: "asset", beatmapAssetId, beats: [], onsets: [], energyCurve: [] };
+  }
+  if (!publish) return { ...base, beatmapSource: "inline", beatmapAssetId: null, ...beatmap };
+  // Immutable per-analysis assets keep a Room with many section tracks below
+  // Firestore's document limit and preserve already-published beat timelines.
+  const hash = createHash("sha256").update(JSON.stringify(beatmap)).digest("hex");
+  const key = `rooms/${roomMusic.roomId}/music/beatmaps/${roomMusic.id}/${hash}.json`;
+  await writePrivateJson(key, beatmap);
+  const beatmapAssetId = assetId("asset", "beatmap", roomMusic.id, hash);
+  addCreativeAsset(receiverId, { id: beatmapAssetId, source: "b2", storageObjectKey: key, contentType: "application/json" }, "beatmap", beatmapAssetId, assets, descriptors);
+  return { ...base, beatmapSource: "asset", beatmapAssetId, beats: [], onsets: [], energyCurve: [] };
 }
 
 async function verifyPrivateAssets(media: Media[], roomMusic: RoomMusic | null) {
@@ -316,11 +306,98 @@ async function verifyPrivateAssets(media: Media[], roomMusic: RoomMusic | null) 
 
 function selectedExperience(studio: RoomStudioConfig) {
   if (!isStudioReadyForBake(studio) || !studio.selectedDirectionId) {
-    throw new ApiError("BAKE_NOT_READY", "Pilih satu ExperienceDNA final sebelum Bake.", 409);
+    throw new ApiError("BAKE_NOT_READY", "Periksa Pratinjau & Suasana sebelum menerbitkan cerita.", 409);
   }
   const raw = studio.directionCandidates.find((item) => item.id === studio.selectedDirectionId);
   if (!raw) throw new ApiError("DIRECTION_NOT_FOUND", "ExperienceDNA final tidak ditemukan.", 409);
   return experienceDnaSchema.parse(raw);
+}
+
+async function buildReceiverDraft(room: Room, studio: RoomStudioConfig, publish: boolean) {
+  const experience = selectedExperience(studio);
+  assertExperienceReferencesSelectedMedia(experience, studio);
+  if (experience.themeId !== studio.themeId || room.themeId !== studio.themeId) {
+    throw new ApiError("THEME_CHANGED", "Tema Room berubah. Buka Pratinjau & Suasana untuk memperbaruinya.", 409);
+  }
+  assertCreativeReferences(experience);
+
+  const musicIds = unique([studio.backgroundMusic?.musicId, ...studio.sectionPlan.map(section => section.music?.musicId)].filter((id): id is string => Boolean(id)));
+  const [allMedia, submissions, tracks] = await Promise.all([
+    backendRepositories.media.listByRoom(room.id),
+    backendRepositories.submissions.listByRoom(room.id),
+    Promise.all(musicIds.map(id => backendRepositories.roomMusic.getById(room.id, id))),
+  ]);
+  if (tracks.some(track => !track)) throw new ApiError("ROOM_MUSIC_MISSING", "Ada musik section yang sudah tidak tersedia.", 409);
+  const roomTracks = tracks.filter((track): track is RoomMusic => Boolean(track));
+  const problems = sectionProblems(studio, allMedia);
+  if (studio.authoringVersion === 2 && problems.length) throw new ApiError("SECTION_INVALID", problems[0], 409);
+  const assignedIds = new Set(experience.sections.flatMap(section => section.mediaIds));
+  const mediaById = new Map(allMedia.map((item) => [item.id, item]));
+  const selectedMedia = [...studio.selectedMedia]
+    .filter(setting => assignedIds.has(setting.mediaId))
+    .sort((a, b) => a.order - b.order)
+    .map((setting) => mediaById.get(setting.mediaId))
+    .filter((item): item is Media => Boolean(item));
+  if (selectedMedia.length !== assignedIds.size) {
+    throw new ApiError("MEDIA_MISSING", "Sebagian media pilihan sudah tidak tersedia. Periksa slot section di Studio.", 409);
+  }
+
+  const wishes = publicWishes(submissions);
+  const wishIds = new Set(wishes.map((item) => item.id));
+  const referencedWishIds = unique(experience.sections.flatMap((section) => section.wishIds));
+  const missingWish = referencedWishIds.find((id) => !wishIds.has(id));
+  if (missingWish) {
+    throw new ApiError("WISH_MISSING", "Ucapan cerita sudah berubah. Perbarui pratinjau di Studio.", 409);
+  }
+
+  const theme = resolveTheme(studio.themeId);
+  if (!theme) throw new ApiError("THEME_NOT_FOUND", "Theme final tidak tersedia di Creative Catalog.", 409);
+  if (publish) {
+    await verifyPrivateAssets(selectedMedia, null);
+    await Promise.all(roomTracks.map(track => verifyPrivateAssets([], track)));
+  }
+
+  const receiverId = publish ? room.receiverId ?? createReceiverId() : `preview_${room.id}`;
+  const assets: ReceiverAssetRecord[] = [];
+  const descriptors: ReceiverAssetDescriptor[] = [];
+  const themeSnapshot = buildThemeSnapshot(receiverId, theme, assets, descriptors);
+  const media = addMediaAssets(receiverId, selectedMedia, assets, descriptors);
+  const snapshots: Record<string, ReceiverMusicSnapshot> = {};
+  for (let offset = 0; offset < roomTracks.length; offset += 6) {
+    const batch = await Promise.all(roomTracks.slice(offset, offset + 6).map(async track => [track.id, await buildMusicSnapshot(receiverId, track, assets, descriptors, publish)] as const));
+    for (const [id, snapshot] of batch) snapshots[id] = snapshot;
+  }
+  const music = studio.backgroundMusic ? snapshots[studio.backgroundMusic.musicId] : null;
+  const sectionMusic = Object.fromEntries(unique(studio.sectionPlan.flatMap(section => section.music ? [section.music.musicId] : [])).map(id => [id, snapshots[id]]));
+
+  const draft: ReceiverManifestDraft = {
+    schemaVersion: 1,
+    receiverId,
+    room: {
+      id: room.id,
+      title: room.title,
+      recipientName: room.recipientName,
+      occasionId: room.occasionId,
+    },
+    theme: themeSnapshot,
+    assets: descriptors,
+    media,
+    wishes,
+    music,
+    sectionMusic,
+    experience,
+  };
+
+  return { draft, assets };
+}
+
+export async function previewOwnedReceiver(ownerUid: string, roomId: string) {
+  const room = await getOwnedRoom(ownerUid, roomId);
+  const studio = getRoomStudioConfig(room);
+  const { draft, assets } = await buildReceiverDraft(room, studio, false);
+  const manifest = receiverManifestSchema.parse({ ...draft, revision: Date.parse(studio.updatedAt), bakedAt: studio.updatedAt });
+  const entries = await Promise.all(assets.map(async asset => [asset.id, asset.source === "public" ? asset.publicPath : await createPrivateDownloadUrl({ objectKey: asset.storageObjectKey, expiresInSeconds: 900 })]));
+  return { manifest, assetUrls: Object.fromEntries(entries), studioUpdatedAt: studio.updatedAt };
 }
 
 export async function bakeOwnedReceiver(ownerUid: string, roomId: string) {
@@ -338,64 +415,8 @@ export async function bakeOwnedReceiver(ownerUid: string, roomId: string) {
   }
 
   const studio = getRoomStudioConfig(room);
-  const experience = selectedExperience(studio);
-  assertExperienceReferencesSelectedMedia(experience, studio);
-  if (experience.themeId !== studio.themeId || room.themeId !== studio.themeId) {
-    throw new ApiError("THEME_CHANGED", "Theme Room berubah setelah direction dibuat. Generate direction ulang.", 409);
-  }
-  assertCreativeReferences(experience);
-
-  const [allMedia, submissions, roomMusic] = await Promise.all([
-    backendRepositories.media.listByRoom(room.id),
-    backendRepositories.submissions.listByRoom(room.id),
-    studio.backgroundMusic?.source === "room-upload"
-      ? backendRepositories.roomMusic.getById(room.id, studio.backgroundMusic.musicId)
-      : Promise.resolve(null),
-  ]);
-  const mediaById = new Map(allMedia.map((item) => [item.id, item]));
-  const selectedMedia = [...studio.selectedMedia]
-    .sort((a, b) => a.order - b.order)
-    .map((setting) => mediaById.get(setting.mediaId))
-    .filter((item): item is Media => Boolean(item));
-  if (selectedMedia.length !== studio.selectedMedia.length) {
-    throw new ApiError("MEDIA_MISSING", "Sebagian media pilihan sudah tidak tersedia. Kembali ke Studio dan generate ulang.", 409);
-  }
-
-  const wishes = publicWishes(submissions);
-  const wishIds = new Set(wishes.map((item) => item.id));
-  const referencedWishIds = unique(experience.sections.flatMap((section) => section.wishIds));
-  const missingWish = referencedWishIds.find((id) => !wishIds.has(id));
-  if (missingWish) {
-    throw new ApiError("WISH_MISSING", "Ucapan yang dipakai ExperienceDNA sudah berubah. Generate direction ulang.", 409);
-  }
-
-  const theme = resolveTheme(studio.themeId);
-  if (!theme) throw new ApiError("THEME_NOT_FOUND", "Theme final tidak tersedia di Creative Catalog.", 409);
-  await verifyPrivateAssets(selectedMedia, roomMusic);
-
-  const receiverId = room.receiverId ?? createReceiverId();
-  const assets: ReceiverAssetRecord[] = [];
-  const descriptors: ReceiverAssetDescriptor[] = [];
-  const themeSnapshot = buildThemeSnapshot(receiverId, theme, assets, descriptors);
-  const media = addMediaAssets(receiverId, selectedMedia, assets, descriptors);
-  const music = buildMusicSnapshot(receiverId, studio, roomMusic, assets, descriptors);
-
-  const draft: ReceiverManifestDraft = {
-    schemaVersion: 1,
-    receiverId,
-    room: {
-      id: room.id,
-      title: room.title,
-      recipientName: room.recipientName,
-      occasionId: room.occasionId,
-    },
-    theme: themeSnapshot,
-    assets: descriptors,
-    media,
-    wishes,
-    music,
-    experience,
-  };
+  const { draft, assets } = await buildReceiverDraft(room, studio, true);
+  const receiverId = draft.receiverId;
 
   const bakedAt = new Date().toISOString();
   const manifest = await backendRepositories.receivers.publishSnapshot({

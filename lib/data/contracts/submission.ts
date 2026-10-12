@@ -14,6 +14,14 @@ export const submissionStatusSchema = z.enum([
 
 export const submissionSourceSchema = z.enum(["contributor", "owner"]);
 
+// Freeze a decision before touching B2. Retries may resume the same decision,
+// but another tab cannot start deleting files selected by the first request.
+export const submissionModerationSchema = z.object({
+  action: z.enum(["approve", "exclude", "delete"]),
+  acceptedMediaIds: z.array(z.string().min(1)).max(100),
+});
+export type SubmissionModeration = z.infer<typeof submissionModerationSchema>;
+
 export const stagedSubmissionMediaSchema = z.object({
   id: z.string().min(1),
   type: z.enum(["photo", "video"]),
@@ -42,6 +50,7 @@ export const submissionSchema = z.object({
   status: submissionStatusSchema,
   submittedAt: z.string().datetime(),
   reviewedAt: z.string().datetime().nullable(),
+  moderation: submissionModerationSchema.nullable().optional(),
 });
 
 export type StagedSubmissionMedia = z.infer<typeof stagedSubmissionMediaSchema>;

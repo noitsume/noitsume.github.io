@@ -28,7 +28,7 @@ export function BakeProgressShell({ roomId, recipientName, mediaCount, musicName
   return <Surface className="bake-progress-shell" tone="elevated">
     <p className="ui-eyebrow">SATU LANGKAH MENUJU SENYUMNYA</p><h1>{busy ? "Sedang menyiapkan kejutanmu…" : `Sudah siap untuk ${recipientName}?`}</h1>
     <p>{busy ? "Kami memeriksa media dan menyiapkan tautan. Tetap di halaman ini sampai proses selesai." : "Periksa pilihanmu sekali lagi. Setelah terbit, tautan kejutan siap kamu bagikan."}</p>
-    <dl className="publish-summary"><div><dt>Momen pilihan</dt><dd>{mediaCount} foto & video</dd></div><div><dt>Musik</dt><dd>{musicName}</dd></div><div><dt>Gaya cerita</dt><dd>{directionName}</dd></div></dl>
+    <dl className="publish-summary"><div><dt>Momen dalam cerita</dt><dd>{mediaCount} foto & video</dd></div><div><dt>Musik</dt><dd>{musicName}</dd></div><div><dt>Susunan cerita</dt><dd>{directionName}</dd></div></dl>
     {busy ? <div className="journey-loading" role="status" aria-label="Memeriksa dan menerbitkan" /> : null}
     {error ? <p className="form-error" role="alert">{error}</p> : null}
     <div className="finish-secondary">{busy ? null : <Link className="ui-button ui-button--ghost" href={`/rooms/${roomId}/studio`}>← Kembali ke Studio</Link>}<button className="ui-button ui-button--primary" disabled={busy} onClick={publish}>{busy ? "Menyiapkan…" : error ? "Coba terbitkan lagi" : "Terbitkan kejutan →"}</button></div>

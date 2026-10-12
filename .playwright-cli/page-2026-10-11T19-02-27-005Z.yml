@@ -1,0 +1,14 @@
+- iframe [ref=f2e2]:
+  - generic [ref=f3e2]:
+    - generic [ref=f3e3]:
+      - button "Serangan lembut" [ref=f3e4] [cursor=pointer]
+      - button "Serangan bass" [ref=f3e5] [cursor=pointer]
+    - generic [ref=f3e6]: Satu event sintetis · ilustrasi gerak tanpa audio
+    - generic [ref=f3e7]:
+      - figure "Riak hujan" [ref=f3e8]:
+        - img "Riak meluas dari titik serangan bunyi." [ref=f3e10]
+      - figure "Spektrum melengkung" [ref=f3e11]:
+        - img "Lengkung spektrum ilustratif mengembang pada serangan, lalu kembali." [ref=f3e13]
+      - figure "Arus partikel" [ref=f3e14]:
+        - img "Partikel mendapat dorongan serentak, lalu melambat." [ref=f3e16]
+    - generic [ref=f3e17]: Respons bass · tampilan diam

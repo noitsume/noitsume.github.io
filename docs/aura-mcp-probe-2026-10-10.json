@@ -1,0 +1,237 @@
+{
+  "date": "2026-10-10",
+  "scope": "Isolated Memory Halo scene; project Three.js; real MCP stdio client; no application integration",
+  "serverPath": "C:\\Users\\KEVIN\\Documents\\Codex\\2026-10-10\\co\\outputs\\threejs-devtools-local\\src\\index.js",
+  "allowMutations": false,
+  "snapshots": [
+    {
+      "status": {
+        "connected": true,
+        "origin": "http://127.0.0.1:61094",
+        "port": 61095,
+        "allowMutations": false
+      },
+      "nodes": [
+        {
+          "name": "Kenangin / Aura MCP probe",
+          "type": "Scene"
+        },
+        {
+          "name": "Aura / Memory Halo",
+          "type": "Mesh"
+        }
+      ],
+      "object": {
+        "uuid": "21e5e96e-1ec9-4e1a-8b06-0439279a56ad",
+        "name": "Aura / Memory Halo",
+        "type": "Mesh",
+        "visible": true,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "materials": [
+          {
+            "uuid": "164c9cd9-fd52-4a75-aaab-36a8ee3925b4",
+            "name": "Memory Halo / warm light",
+            "type": "ShaderMaterial"
+          }
+        ],
+        "geometry": {
+          "vertices": 4,
+          "indices": 6
+        }
+      },
+      "uniforms": {
+        "uTime": 41.128800000002386,
+        "uStrength": 0.28,
+        "uResolution": [
+          1280,
+          900
+        ]
+      },
+      "shader": {
+        "fragmentLength": 800,
+        "sha256": "4f75513ebceb65d15c43a8d5c31ab1fab898775a9cccccd036e9ecb0db6c52a2"
+      },
+      "renderer": {
+        "render": {
+          "calls": 1,
+          "triangles": 2,
+          "frame": 5911
+        },
+        "memory": {
+          "geometries": 1,
+          "textures": 0
+        },
+        "canvas": {
+          "width": 1280,
+          "height": 900
+        }
+      },
+      "mutationRejection": "Mutations disabled"
+    },
+    {
+      "status": {
+        "connected": true,
+        "origin": "http://127.0.0.1:61094",
+        "port": 61095,
+        "allowMutations": false
+      },
+      "nodes": [
+        {
+          "name": "Kenangin / Aura MCP probe",
+          "type": "Scene"
+        },
+        {
+          "name": "Aura / Memory Halo",
+          "type": "Mesh"
+        }
+      ],
+      "object": {
+        "uuid": "21e5e96e-1ec9-4e1a-8b06-0439279a56ad",
+        "name": "Aura / Memory Halo",
+        "type": "Mesh",
+        "visible": true,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "materials": [
+          {
+            "uuid": "164c9cd9-fd52-4a75-aaab-36a8ee3925b4",
+            "name": "Memory Halo / warm light",
+            "type": "ShaderMaterial"
+          }
+        ],
+        "geometry": {
+          "vertices": 4,
+          "indices": 6
+        }
+      },
+      "uniforms": {
+        "uTime": 68.7832000000006,
+        "uStrength": 0.82,
+        "uResolution": [
+          1280,
+          900
+        ]
+      },
+      "shader": {
+        "fragmentLength": 800,
+        "sha256": "4f75513ebceb65d15c43a8d5c31ab1fab898775a9cccccd036e9ecb0db6c52a2"
+      },
+      "renderer": {
+        "render": {
+          "calls": 1,
+          "triangles": 2,
+          "frame": 9894
+        },
+        "memory": {
+          "geometries": 1,
+          "textures": 0
+        },
+        "canvas": {
+          "width": 1280,
+          "height": 900
+        }
+      },
+      "mutationRejection": "Mutations disabled"
+    }
+  ],
+  "server": {
+    "name": "threejs-devtools-local",
+    "version": "0.1.0"
+  },
+  "tools": [
+    "bridge_status",
+    "bridge_pairing",
+    "bridge_disconnect",
+    "scene_tree",
+    "object_details",
+    "material_details",
+    "shader_source",
+    "renderer_info"
+  ],
+  "beforePairing": {
+    "connected": false,
+    "origin": "http://127.0.0.1:61094",
+    "port": 61095,
+    "allowMutations": false
+  },
+  "unpairedRejection": "Browser not paired",
+  "disconnected": true,
+  "cleanup": {
+    "browserClosed": true,
+    "bridgeDisconnected": true,
+    "listeners": [
+      {
+        "port": 61094,
+        "listening": false,
+        "error": "ECONNREFUSED"
+      },
+      {
+        "port": 61095,
+        "listening": false,
+        "error": "ECONNREFUSED"
+      }
+    ]
+  },
+  "browserVerification": {
+    "engine": "Chromium",
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "contextLost": false,
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "observedHttpRequests": "Only the temporary 127.0.0.1 origin; Three.js and bridge assets served locally",
+    "console": "One missing favicon 404; no observed shader compile error",
+    "screenshots": [
+      "docs/aura-mcp-probe-calm.png",
+      "docs/aura-mcp-probe-energik.png"
+    ]
+  },
+  "verdict": {
+    "stdioInitialization": true,
+    "toolDiscovery": true,
+    "realBrowserPairing": true,
+    "sceneObjectMaterialShaderRendererInspection": true,
+    "observedIntensityChange": [
+      0.28,
+      0.82
+    ],
+    "animationAdvances": true,
+    "mutationDenied": true,
+    "disconnected": true,
+    "projectReceiverIntegration": false
+  },
+  "notes": [
+    "The registered server had ALLOW_MUTATIONS=0, BRIDGE_PORT=9222 and DEV_ORIGIN=http://localhost:3000. Test spawned that same local entry point with temporary loopback ports/origin; persistent config was unchanged.",
+    "Tools were not exposed directly in this chat; the probe used a standard MCP SDK client over real stdio, not mocked handlers.",
+    "Preset changes were made by scene UI; MCP inspected the changes. It did not create or edit the shader.",
+    "Only fixture files in ignored tmp and evidence files in docs were added. Application routes, Receiver, Studio, Room data and package manifests were untouched."
+  ]
+}

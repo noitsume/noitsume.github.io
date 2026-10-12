@@ -3,6 +3,7 @@ import { roomDestination } from "@/lib/domain/journey";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardRoomSections } from "@/components/dashboard/dashboard-room-sections";
+import { DashboardBackground } from "@/components/dashboard/dashboard-background";
 import { AppShell } from "@/components/shell";
 import {
   ArrowRightIcon,
@@ -164,7 +165,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   );
 
   return (
-    <AppShell user={user} rightRail={rightRail}>
+    <AppShell user={user} rightRail={rightRail} className="app-shell--desk-studio" background={<DashboardBackground />}>
       <div className="dashboard-page">
         <Surface className="dashboard-hero" tone="elevated">
           <div className="dashboard-hero__copy">

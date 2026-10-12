@@ -104,6 +104,13 @@ export async function headPrivateObject(objectKey: string) {
   );
 }
 
+export async function writePrivateJson(objectKey: string, data: unknown) {
+  await getB2Client().send(new PutObjectCommand({
+    Bucket: getB2BucketName(), Key: objectKey, ContentType: "application/json",
+    Body: JSON.stringify(data), CacheControl: "private, max-age=0",
+  }));
+}
+
 export async function deletePrivateObjects(objectKeys: string[]) {
   const uniqueKeys = Array.from(new Set(objectKeys.filter(Boolean)));
   if (uniqueKeys.length === 0) return;

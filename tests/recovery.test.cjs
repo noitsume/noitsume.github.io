@@ -9,7 +9,7 @@ const { openCacheIndexDb } = require('../lib/browser-cache/db.ts');
 
 test('three fallback styles preserve every medium and differ in pacing and beat response', () => {
   const selectedMedia = ['photo-a','photo-b','video'].map((mediaId,order)=>({mediaId,order,volume:1,trimInSec:null,trimOutSec:null,loop:false,fit:'contain'}));
-  const studio = roomStudioConfigSchema.parse({schemaVersion:1,selectedMedia,sectionPlan:[{id:'section_album',type:'photo-slide',mediaIds:['photo-a','photo-b'],order:0},{id:'section_video',type:'video',mediaIds:['video'],order:1}],storyAnchors:{opening:[],climax:['video'],ending:[]},storyAnchorsConfirmed:true,themeId:'theme_warm_memory',backgroundMusic:{source:'catalog',songId:'song_afterglow'},directionCandidates:[],selectedDirectionId:null,updatedAt:'2026-10-08T00:00:00.000Z'});
+  const studio = roomStudioConfigSchema.parse({schemaVersion:1,selectedMedia,sectionPlan:[{id:'section_album',type:'photo-slide',mediaIds:['photo-a','photo-b'],order:0},{id:'section_video',type:'video',mediaIds:['video'],order:1}],storyAnchors:{opening:[],climax:['video'],ending:[]},storyAnchorsConfirmed:true,themeId:'theme_warm_memory',backgroundMusic:{source:'room-upload',musicId:'room_music_test1234'},directionCandidates:[],selectedDirectionId:null,updatedAt:'2026-10-08T00:00:00.000Z'});
   const choices = fallbackDirections({roomId:'qa',recipientName:'QA',occasionId:'birthday',studio,media:selectedMedia.map(item=>({id:item.mediaId,type:item.mediaId==='video'?'video':'photo'})),submissions:[],roomMusic:null,variantCount:3});
   assert.equal(choices.length,3);
   assert.equal(new Set(choices.map(item=>item.sections[1].dwellSeconds)).size,3);

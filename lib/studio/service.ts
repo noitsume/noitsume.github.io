@@ -2,13 +2,12 @@ import { consumeRateLimit } from "@/lib/http/rate-limit";
 import "server-only";
 
 import { extname } from "node:path";
+import { createHash } from "node:crypto";
 import {
   defaultBackgroundMusicMixPolicy,
-  resolveSong,
   resolveTheme,
   roomMusicSchema,
   type BackgroundMusicSelection,
-  type ThemeId,
 } from "@/lib/creative";
 import type { Media, Room } from "@/lib/data/contracts";
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
@@ -17,12 +16,15 @@ import {
   createIngestUploadUrl,
   createPrivateDownloadUrl,
   deletePrivateObjects,
+  deletePrivatePrefixCompletely,
   headPrivateObject,
+  writePrivateJson,
 } from "@/lib/storage";
 import { createId } from "@/lib/utils/id";
 import { getOwnedRoom } from "@/lib/rooms";
 import {
   directorGenerateRequestSchema,
+  defaultSceneAtmosphere,
   roomMusicAnalysisInputSchema,
   roomMusicCommitRequestSchema,
   roomMusicUploadRequestSchema,
@@ -35,7 +37,7 @@ import {
   type StudioMediaSetting,
   type StudioSettingsRequest,
 } from "./contracts";
-import { buildStudioSectionPlan } from "./section-plan";
+import { compileAuthoredExperience, sectionProblems, upgradeStudioAuthoring } from "./authoring";
 import { generateExperienceDirections } from "./director";
 import { ensureWishIntelligence } from "./wish-intelligence";
 
@@ -50,12 +52,13 @@ export function getRoomStudioConfig(room: Room): RoomStudioConfig {
     ? (room.config as Record<string, unknown>).studio
     : null;
   const parsed = roomStudioConfigSchema.safeParse(raw);
-  if (parsed.success) return parsed.data;
+  if (parsed.success) return upgradeStudioAuthoring(parsed.data);
 
   const theme = resolveTheme(room.themeId) ?? resolveTheme("theme_warm_memory");
   if (!theme) throw new ApiError("THEME_NOT_FOUND", "Tema Room tidak tersedia di Creative Catalog.", 500);
   return roomStudioConfigSchema.parse({
     schemaVersion: 1,
+    authoringVersion: 2,
     selectedMedia: [],
     sectionPlan: [],
     storyAnchors: defaultAnchors(),
@@ -107,9 +110,6 @@ function assertUniqueMediaSettings(settings: StudioMediaSetting[]) {
 function normalizeSelectedMedia(settings: StudioMediaSetting[], media: Media[]) {
   assertUniqueMediaSettings(settings);
   const mediaById = new Map(media.map((item) => [item.id, item]));
-  const videos = settings.filter(setting => mediaById.get(setting.mediaId)?.type === "video").length;
-  const hasPhotos = settings.some(setting => mediaById.get(setting.mediaId)?.type === "photo");
-  if (videos + Number(hasPhotos) > 79) throw new ApiError("STORY_TOO_LONG", "Cerita mendukung 79 bagian media. Kurangi beberapa video agar masih ada ruang untuk album foto.", 400);
 
   return [...settings]
     .sort((a, b) => a.order - b.order)
@@ -164,21 +164,12 @@ function assertAnchorsReferenceSelected(anchors: StoryAnchors, selectedIds: Set<
   }
 }
 
-async function assertBackgroundMusic(room: Room, selection: BackgroundMusicSelection | null, themeId: ThemeId) {
+async function assertBackgroundMusic(room: Room, selection: BackgroundMusicSelection | null) {
   if (!selection) return;
-  if (selection.source === "catalog") {
-    const song = resolveSong(selection.songId);
-    if (!song) throw new ApiError("SONG_NOT_FOUND", "Template musik tidak tersedia.", 400);
-    if (!song.compatibleThemes.includes(themeId)) {
-      throw new ApiError("SONG_THEME_INCOMPATIBLE", "Template musik ini tidak cocok dengan Theme yang dipilih.", 400);
-    }
-    return;
-  }
-
   const roomMusic = await backendRepositories.roomMusic.getById(room.id, selection.musicId);
   if (!roomMusic) throw new ApiError("ROOM_MUSIC_NOT_FOUND", "Lagu upload Room tidak ditemukan.", 400);
   if (roomMusic.analysis.status !== "ready") {
-    throw new ApiError("ROOM_MUSIC_NOT_ANALYZED", "Klik Analyze pada lagu upload sebelum melanjutkan.", 409);
+    throw new ApiError("ROOM_MUSIC_NOT_ANALYZED", "Tekan Siapkan musik pada lagu yang diunggah sebelum melanjutkan.", 409);
   }
 }
 
@@ -199,15 +190,9 @@ export async function startOwnedStudio(ownerUid: string, roomId: string) {
     return { ...room, status: "configuring" as const, updatedAt };
   }
 
-  const [submissions, media] = await Promise.all([
-    backendRepositories.submissions.listByRoom(room.id),
-    backendRepositories.media.listByRoom(room.id),
-  ]);
+  const submissions = await backendRepositories.submissions.listByRoom(room.id);
   if (submissions.some((item) => item.status === "new")) {
     throw new ApiError("SUBMISSION_REVIEW_REQUIRED", "Selesaikan review semua submission sebelum masuk Studio.", 409);
-  }
-  if (media.length === 0) {
-    throw new ApiError("MEDIA_REQUIRED", "Minimal satu media harus tersedia di inventori sebelum masuk Studio.", 409);
   }
 
   const updatedAt = new Date().toISOString();
@@ -228,12 +213,21 @@ export async function saveOwnedStudioSettings(ownerUid: string, roomId: string, 
   const selectedMedia = normalizeSelectedMedia(input.selectedMedia, media);
   const selectedIds = new Set(selectedMedia.map((item) => item.mediaId));
   assertAnchorsReferenceSelected(input.storyAnchors, selectedIds);
-  await assertBackgroundMusic(room, input.backgroundMusic, theme.id);
+  await assertBackgroundMusic(room, input.backgroundMusic);
+
+  const current = getRoomStudioConfig(room);
+  const sectionPlan = (input.sectionPlan ?? current.sectionPlan).map((section, order) => ({ ...section, order }));
+  const problems = sectionProblems({ selectedMedia, sectionPlan }, media, Boolean(input.preparePreview));
+  if (problems.length) throw new ApiError("SECTION_INVALID", problems[0], 400);
+  const musicIds = new Set(sectionPlan.flatMap(section => section.music ? [section.music.musicId] : []));
+  await Promise.all([...musicIds].map(musicId => assertBackgroundMusic(room, { source: "room-upload", musicId })));
 
   const studio = roomStudioConfigSchema.parse({
-    ...getRoomStudioConfig(room),
+    ...current,
+    authoringVersion: 2,
     selectedMedia,
-    sectionPlan: buildStudioSectionPlan(selectedMedia, media),
+    sectionPlan,
+    atmosphere: input.atmosphere ?? current.atmosphere ?? defaultSceneAtmosphere,
     storyAnchors: input.storyAnchors,
     storyAnchorsConfirmed: input.storyAnchorsConfirmed,
     themeId: theme.id,
@@ -242,6 +236,11 @@ export async function saveOwnedStudioSettings(ownerUid: string, roomId: string, 
     selectedDirectionId: null,
     updatedAt: new Date().toISOString(),
   });
+  if (input.preparePreview) {
+    const experience = compileAuthoredExperience(studio, createId("direction"), studio.updatedAt);
+    studio.directionCandidates = [experience];
+    studio.selectedDirectionId = experience.id;
+  }
 
   await persistStudio(room, studio);
   return { studio };
@@ -374,6 +373,8 @@ export async function getOwnedRoomMusicDownloadUrl(ownerUid: string, roomId: str
 
 function validateMusicAnalysisTiming(input: RoomMusicAnalysisInput) {
   const duration = input.durationSec;
+  if (input.features && (input.features.hash !== input.hash || Math.abs(input.features.durationSec - duration) > .001)) throw new ApiError("MUSIC_ANALYSIS_INVALID", "Identitas beatmap tidak sesuai audio.", 400);
+  for (const times of [input.beats, input.onsets]) if (times.some((t, i) => i > 0 && t <= times[i - 1])) throw new ApiError("MUSIC_ANALYSIS_INVALID", "Waktu beatmap harus berurutan.", 400);
   for (const value of [...input.beats, ...input.onsets]) {
     if (value > duration + 0.05) {
       throw new ApiError("MUSIC_ANALYSIS_INVALID", "Beat/onset berada di luar durasi lagu.", 400);
@@ -400,18 +401,43 @@ export async function saveOwnedRoomMusicAnalysis(
   if (!item) throw new ApiError("ROOM_MUSIC_NOT_FOUND", "Lagu Room tidak ditemukan.", 404);
 
   const updatedAt = new Date().toISOString();
+  const { features, ...summary } = analysisInput;
+  let beatmap = item.beatmap;
+  if (features) {
+    const payload = { ...analysisInput, schemaVersion: 2 };
+    const contentHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+    const key = `rooms/${room.id}/music/beatmaps/${musicId}/${contentHash}.json`;
+    await writePrivateJson(key, payload);
+    beatmap = { id: `${musicId}-${contentHash}`, source: "b2", storageObjectKey: key, contentType: "application/json" };
+  }
   const updated = roomMusicSchema.parse({
     ...item,
+    beatmap,
     analysis: {
       status: "ready",
-      version: "music-v1",
+      version: features ? "music-v2" : "music-v1",
       failureCode: null,
-      ...analysisInput,
+      ...summary,
     },
     updatedAt,
   });
   await backendRepositories.roomMusic.updateAnalysis(room.id, musicId, updated);
   return { music: updated };
+}
+
+export async function saveOwnedVideoBeatmap(ownerUid: string, roomId: string, mediaId: string, rawInput: unknown) {
+  const room = await getOwnedRoom(ownerUid, roomId); assertConfiguring(room);
+  const media = await backendRepositories.media.getById(room.id, mediaId);
+  if (!media || media.type !== "video") throw new ApiError("MEDIA_NOT_FOUND", "Video Room tidak ditemukan.", 404);
+  const input = roomMusicAnalysisInputSchema.parse(rawInput); validateMusicAnalysisTiming(input);
+  if (!input.features) throw new ApiError("AUDIO_FEATURES_REQUIRED", "Siapkan beatmap rinci untuk video ini.", 400);
+  const payload = { ...input, schemaVersion: 2 };
+  const hash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+  const key = `rooms/${room.id}/media-beatmaps/${media.id}/${hash}.json`;
+  await writePrivateJson(key, payload);
+  const audioBeatmap = { storageObjectKey: key, hash: input.hash, durationSec: input.durationSec, version: "music-v2" as const };
+  await backendRepositories.media.updateAudioBeatmap(room.id, media.id, audioBeatmap);
+  return { audioBeatmap };
 }
 
 export async function markOwnedRoomMusicAnalysisFailed(ownerUid: string, roomId: string, musicId: string) {
@@ -435,8 +461,9 @@ export async function deleteOwnedRoomMusic(ownerUid: string, roomId: string, mus
   if (!item) return { deleted: false };
   const studio = getRoomStudioConfig(room);
   const published = room.receiverId ? await backendRepositories.receivers.getManifest(room.receiverId) : null;
-  if ((studio.backgroundMusic?.source === "room-upload" && studio.backgroundMusic.musicId === musicId) || published?.assets.some(asset => asset.id.includes(musicId))) throw new ApiError("MUSIC_IN_USE", "Musik masih dipakai oleh draf atau cerita yang terbit. Pilih musik lain dan terbitkan perubahan terlebih dahulu.", 409);
-  if (item.track.source === "b2") await deletePrivateObjects([item.track.storageObjectKey]);
+  if (studio.backgroundMusic?.musicId === musicId || studio.sectionPlan.some(section => section.music?.musicId === musicId) || published?.assets.some(asset => asset.id.includes(musicId))) throw new ApiError("MUSIC_IN_USE", "Musik masih dipakai oleh draf atau cerita yang terbit. Lepaskan dari semua section dan terbitkan perubahan terlebih dahulu.", 409);
+  await deletePrivateObjects([item.track, item.beatmap].flatMap(asset => asset?.source === "b2" ? [asset.storageObjectKey] : []));
+  await deletePrivatePrefixCompletely(`rooms/${room.id}/music/beatmaps/${item.id}/`);
   await backendRepositories.roomMusic.delete(room.id, musicId);
   return { deleted: true };
 }
@@ -447,6 +474,7 @@ export async function listOwnedRoomMusic(ownerUid: string, roomId: string) {
 }
 
 export function isStudioReadyForDirection(studio: RoomStudioConfig) {
+  if (studio.authoringVersion === 2) return sectionProblems(studio).length === 0;
   return studio.selectedMedia.length > 0
     && studio.sectionPlan.length > 0
     && studio.storyAnchorsConfirmed
@@ -467,6 +495,12 @@ export async function generateOwnedExperienceDirections(ownerUid: string, roomId
   assertConfiguring(room);
   assertDraftVersion(room, input.expectedStudioUpdatedAt);
   const studio = getRoomStudioConfig(room);
+  if (studio.authoringVersion === 2) {
+    const experience = compileAuthoredExperience(studio, createId("direction"), new Date().toISOString());
+    const next = { ...studio, directionCandidates: [experience], selectedDirectionId: experience.id, updatedAt: experience.generatedAt };
+    await persistStudio(room, next);
+    return { studio: next };
+  }
   if (!isStudioReadyForDirection(studio) || !studio.backgroundMusic) {
     throw new ApiError(
       "STUDIO_DIRECTION_NOT_READY",

@@ -8,8 +8,8 @@ export const metadata = { title: "Panduan Kenangin" };
 const steps = [
   ["Buat ruangnya", "Tentukan untuk siapa kejutan ini dibuat, pilih suasana, dan tentukan batas pengumpulan. Room adalah tempat semua kenangan berkumpul."],
   ["Ajak orang terdekat", "Salin tautan pengumpulan dari halaman Room. Teman dan keluarga bisa mengirim ucapan, foto, atau video tanpa membuat akun."],
-  ["Pilih momen", "Terima kiriman yang ingin disertakan. Kamu juga bisa menambahkan foto dan video sendiri. Tutup pengumpulan setelah semuanya masuk."],
-  ["Rangkai ceritanya", "Studio membimbingmu memilih media, memberi petunjuk cerita bila perlu, memilih musik, dan menentukan satu gaya favorit."],
+  ["Pilih momen", "Buka preview setiap foto atau video, lalu centang media yang ingin diterima. Saat menyimpan pilihan, media tanpa centang dihapus permanen. Kamu juga bisa menambahkan media sendiri. Tutup pengumpulan setelah semuanya masuk."],
+  ["Rangkai ceritanya", "Ikuti empat langkah Studio: Momen, Atur Cerita, Musik, lalu Pratinjau & Suasana. Buat section foto, video, slider, atau teks. Tambahkan keterangan dan musik pilihanmu, lalu putar cerita lengkap sebelum menerbitkan."],
   ["Terbitkan & bagikan", "Tinjau pilihanmu, lalu terbitkan. Buka pratinjau sebelum membagikan tautan kejutan kepada penerima. Tautannya tetap sama saat ceritanya diperbarui."],
 ];
 export default async function GuidePage() {

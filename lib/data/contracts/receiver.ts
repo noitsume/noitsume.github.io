@@ -48,6 +48,8 @@ export const receiverAssetRecordSchema = z.discriminatedUnion("source", [
 ]);
 
 export const receiverMediaDescriptorSchema = z.object({
+  audioBeatmapAssetId: z.string().min(1).optional(),
+  audioDurationSec: z.number().positive().optional(),
   id: z.string().min(1),
   assetId: z.string().min(1),
   type: z.enum(["photo", "video"]),
@@ -121,9 +123,10 @@ export const receiverManifestSchema = z.object({
   }),
   theme: receiverThemeSnapshotSchema,
   assets: z.array(receiverAssetDescriptorSchema).min(1),
-  media: z.array(receiverMediaDescriptorSchema).min(1),
+  media: z.array(receiverMediaDescriptorSchema),
   wishes: z.array(receiverWishSchema),
-  music: receiverMusicSnapshotSchema,
+  music: receiverMusicSnapshotSchema.nullable(),
+  sectionMusic: z.record(z.string(), receiverMusicSnapshotSchema).optional(),
   experience: receiverExperienceSnapshotSchema,
 });
 
@@ -139,5 +142,6 @@ export type ReceiverAssetRecord = z.infer<typeof receiverAssetRecordSchema>;
 export type ReceiverMediaDescriptor = z.infer<typeof receiverMediaDescriptorSchema>;
 export type ReceiverWish = z.infer<typeof receiverWishSchema>;
 export type ReceiverManifest = z.infer<typeof receiverManifestSchema>;
+export type ReceiverMusicSnapshot = z.infer<typeof receiverMusicSnapshotSchema>;
 export type ReceiverManifestDraft = Omit<ReceiverManifest, "revision" | "bakedAt">;
 export type ScrollFocusState = z.infer<typeof scrollFocusStateSchema>;

@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-12",
+  "runtime": "Chrome desktop; mobile viewport emulation 390x844",
+  "projectTests": {
+    "passed": 47
+  },
+  "typecheck": "passed",
+  "targetedLint": "passed",
+  "productionBuild": "passed",
+  "routeChecks": {
+    "productionFixture": 404,
+    "productionFixtureAsset": 404,
+    "developmentFixture": 200,
+    "unauthenticatedDashboard": "307 to /login?next=%2Fdashboard"
+  },
+  "browserChecks": [
+    "Aura stays still before music starts",
+    "opening settles",
+    "DOM aperture and shader finish together",
+    "playing music drives ambient clock and beatmap signal",
+    "portrait navigation",
+    "section music starts after settle",
+    "section beatmap drives foreground accent",
+    "music pause stops both transports",
+    "music pause stops all Aura uniforms and render while motion preference stays on",
+    "music pause preserves motion preference",
+    "music pause clears signals",
+    "resuming music respects explicit motion pause",
+    "Aura resumes when music and motion are both active",
+    "resuming playback does not replay the section entrance accent",
+    "actual audio pause stops Aura even when music control is enabled",
+    "muted audio stops Aura",
+    "waiting audio events stop Aura",
+    "video starts after settle",
+    "departed video is paused",
+    "long letter scroll reserves navigation",
+    "pause stops ambient clock and continuous render",
+    "30 moves retain one geometry and no media textures",
+    "rapid reversal settles latest destination",
+    "mobile has no horizontal document overflow",
+    "reduced motion respected",
+    "context loss gives static fallback",
+    "wish content remains accessible after GPU loss",
+    "receiver without music keeps Aura static",
+    "silent receiver navigation stays usable",
+    "failed music leaves Aura static",
+    "failed music keeps retry and opened content accessible",
+    "legacy snapshot keeps original renderer"
+  ],
+  "mcpInspection": {
+    "date": "2026-10-12",
+    "source": "user local threejs devtools clone",
+    "nativeAvailableOnFinalSession": true,
+    "connectedToActualReceiver": true,
+    "disconnectedAfterInspection": true,
+    "allowMutations": false,
+    "geometryCount": 1,
+    "triangles": 2,
+    "textures": 0,
+    "pausedFrameCountStable": true,
+    "pausedFrameReads": [13993, 13993]
+  },
+  "limits": [
+    "No physical Android or iPhone benchmark",
+    "No FPS or heap leak claim",
+    "Music-features v2 / librosa not implemented",
+    "No user Room modified or deployment performed"
+  ]
+}

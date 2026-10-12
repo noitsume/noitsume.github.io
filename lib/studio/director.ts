@@ -4,7 +4,6 @@ import { Type } from "@google/genai";
 import {
   creativeCatalog,
   defaultBackgroundMusicMixPolicy,
-  resolveSong,
   resolveTheme,
   type AuraId,
   type BackgroundMusicSelection,
@@ -251,19 +250,7 @@ function buildSections(
 }
 
 function musicContext(selection: BackgroundMusicSelection, roomMusic: RoomMusic | null) {
-  if (selection.source === "catalog") {
-    const song = resolveSong(selection.songId);
-    return song ? {
-      source: "catalog",
-      id: song.id,
-      name: song.name,
-      bpm: song.bpm,
-      durationSec: song.durationSec,
-      mood: song.mood,
-      sections: song.sections,
-    } : null;
-  }
-  if (!roomMusic) return null;
+  if (!roomMusic || roomMusic.id !== selection.musicId) return null;
   return {
     source: "room-upload",
     id: roomMusic.id,

@@ -1,0 +1,55 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e14]:
+      - button "Kenangin.id — kembali ke awal" [ref=e15] [cursor=pointer]
+      - generic [ref=e21]:
+        - button "♫ Musik aktif" [pressed] [ref=e22] [cursor=pointer]
+        - button "Jeda gerakan" [pressed] [ref=e23] [cursor=pointer]
+    - generic "Cerita kenangan" [ref=e24]:
+      - region "Waktu yang kita simpan" [active] [ref=e25]:
+        - generic [aria-hidden] [ref=e26]:
+          - generic [ref=e27]: "01"
+          - generic [ref=e28]: Waktu yang kita simpan
+        - generic "Isi section" [ref=e29]:
+          - img "Ilustrasi uji landscape" [ref=e32]
+          - paragraph [ref=e34]: Ada hal-hal kecil yang tetap tinggal, bahkan setelah harinya berlalu.
+      - region "Lebih dekat" [ref=e35]:
+        - generic [aria-hidden] [ref=e36]:
+          - generic [ref=e37]: "02"
+          - generic [ref=e38]: Lebih dekat
+        - generic "Isi section" [ref=e39]:
+          - img "Ilustrasi uji portrait" [ref=e42]
+          - paragraph [ref=e44]: Satu momen. Banyak alasan untuk mengingatnya.
+      - region "Suara di dalam kenangan" [ref=e45]:
+        - generic [aria-hidden] [ref=e46]:
+          - generic [ref=e47]: "03"
+          - generic [ref=e48]: Suara di dalam kenangan
+        - generic "Isi section" [ref=e49]:
+          - paragraph [ref=e52]: Fixture video dengan suara; kontrol dan prioritas audio tetap milik pemutar.
+      - region "Untuk dibaca pelan-pelan" [ref=e53]:
+        - generic [aria-hidden] [ref=e54]:
+          - generic [ref=e55]: "04"
+          - generic [ref=e56]: Untuk dibaca pelan-pelan
+        - generic "Isi section" [ref=e57]:
+          - generic [ref=e58]:
+            - paragraph [ref=e59]: Untuk dibaca pelan-pelan
+            - paragraph [ref=e60]: Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang. Terima kasih sudah hadir. Semoga selalu ada ruang untuk hal-hal yang membuatmu merasa pulang.
+      - region "Semua ucapan" [ref=e61]:
+        - generic "Daftar ucapan" [ref=e62]:
+          - paragraph [ref=e63]: DARI HATI MEREKA
+          - heading "Banyak cara untuk bilang, kamu berarti." [level=2] [ref=e64]: Banyak cara untuk bilang,kamu berarti.
+          - paragraph [ref=e65]: 1 ucapan untuk Sahabat. Pilih untuk membaca.
+          - button "01 Teman Ini ucapan fixture, bukan data pengguna. Terima kasih sudah menjadi bagian dari cerita ini." [ref=e67] [cursor=pointer]:
+            - generic [ref=e68]: "01"
+            - generic [ref=e69]:
+              - strong [ref=e70]: Teman
+              - generic [ref=e71]: Ini ucapan fixture, bukan data pengguna. Terima kasih sudah menjadi bagian dari cerita ini.
+            - generic [aria-hidden] [ref=e72]: ↗
+    - navigation "Navigasi cerita" [ref=e73]:
+      - button "← Kembali" [disabled] [ref=e74]
+      - generic [ref=e75]:
+        - generic [ref=e76]: 1 / 5
+        - progressbar "Kemajuan cerita" [ref=e77]
+      - button "Lanjut →" [ref=e78] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e84] [cursor=pointer]
+  - alert [ref=e10]

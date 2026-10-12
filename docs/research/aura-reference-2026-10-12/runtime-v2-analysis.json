@@ -1,0 +1,19 @@
+{
+  "audioFile": "tmp/aura-room/Ritme-referensi.mp3",
+  "sha256": "e4ce6b4de3f8b1b15db2c780f2df91f7a15b5c0bb7e99d3e5ca7d402d99f60eb",
+  "extractor": "spectral-flux-v2",
+  "durationSec": 27.678185941043083,
+  "extractionMs": 275,
+  "estimatedBpm": 149.6606,
+  "pulseConfidence": 0.6318,
+  "attacks": 182,
+  "spectrumBands": 16,
+  "curveFrames": 554,
+  "jsonBytes": 62187,
+  "modeled60HzDelayMs": {
+    "p50": 7.999999999999119,
+    "p95": 16.066666666663565,
+    "max": 16.633333333333944
+  },
+  "caveat": "Measured extraction and modeled frame quantization, not beat accuracy or end-to-end audible latency. Reference has no annotated musical ground truth."
+}

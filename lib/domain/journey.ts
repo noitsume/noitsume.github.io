@@ -25,7 +25,8 @@ export function workspaceGuidance(status: RoomStatus, pending: number, media: nu
   if (status === "baking") return { title: "Cerita sedang disiapkan.", detail: "Lihat proses penerbitan dan tautan hasilnya.", action: "bake" as const };
   if (status === "configuring") return { title: "Lanjutkan ceritamu.", detail: "Pilihan yang tersimpan bisa kamu lanjutkan di Studio.", action: "studio" as const };
   if (pending > 0) return { title: `${pending} kiriman menunggu pilihanmu.`, detail: "Lihat kiriman di bawah. Simpan momen yang ingin kamu masukkan.", action: "review" as const };
-  if (media === 0) return { title: "Mulai dengan satu kenangan.", detail: status === "collecting" ? "Bagikan tautan pengumpulan atau tambahkan foto dan video sendiri." : "Tambahkan setidaknya satu foto atau video untuk mulai menyusun cerita.", action: "upload" as const };
+  if (media === 0 && status === "closed") return { title: "Ceritamu bisa dimulai dari kata-kata.", detail: "Buka Studio untuk membuat section Teks, atau tambahkan foto dan video sendiri.", action: "studio" as const };
+  if (media === 0) return { title: "Mulai dengan satu kenangan.", detail: "Bagikan tautan pengumpulan atau tambahkan foto dan video sendiri.", action: "upload" as const };
   if (status === "collecting") return { title: "Sudah cukup momennya?", detail: "Tutup pengumpulan saat semua orang selesai mengirim. Setelah itu, susun kejutanmu.", action: "close" as const };
-  return { title: "Momen pilihanmu siap dirangkai.", detail: `${media} media tersedia. Berikutnya pilih suasana, musik, dan gaya cerita.`, action: "studio" as const };
+  return { title: "Momen pilihanmu siap dirangkai.", detail: `${media} media tersedia. Susun section, tambahkan musik jika ingin, lalu putar pratinjaunya.`, action: "studio" as const };
 }

@@ -1,5 +1,4 @@
 import { getRoomStudioConfig, isStudioReadyForBake } from "@/lib/studio/service";
-import { resolveSong } from "@/lib/creative";
 import { backendRepositories } from "@/lib/data/providers/backend-repository-provider";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -28,9 +27,11 @@ export default async function BakePage({ params }: PageProps) {
   const studio = getRoomStudioConfig(room);
   if (!isStudioReadyForBake(studio)) redirect("/rooms/" + room.id + "/studio");
   const selectedMusic = studio.backgroundMusic;
-  const musicName = selectedMusic?.source === "catalog" ? resolveSong(selectedMusic.songId)?.name ?? "Musik pilihan" : selectedMusic?.source === "room-upload" ? (await backendRepositories.roomMusic.getById(room.id, selectedMusic.musicId))?.name ?? "Musik pilihan" : "Musik pilihan";
+  const sectionMusicCount = studio.sectionPlan.filter(section => section.music).length;
+  const soundtrackName = selectedMusic ? (await backendRepositories.roomMusic.getById(room.id, selectedMusic.musicId))?.name ?? "Musik pilihanmu" : "Tanpa soundtrack latar";
+  const musicName = soundtrackName + (sectionMusicCount ? ` · ${sectionMusicCount} musik section` : "");
   const user = await getOwnerShellUser(session);
   if (!user) redirect(`/onboarding?next=${encodeURIComponent(`/rooms/${id}/bake`)}`);
 
-  return <AppShell user={user} hideSidebar><div className="room-page room-workspace bake-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Terbitkan</span></div><RoomProgress status="baking" /><BakeProgressShell roomId={room.id} recipientName={room.recipientName} mediaCount={studio.selectedMedia.length} musicName={musicName} directionName={studio.directionCandidates.find(item => item.id === studio.selectedDirectionId)?.name ?? "Gaya pilihan"} /></div></AppShell>;
+  return <AppShell user={user} hideSidebar><div className="room-page room-workspace bake-page"><div className="room-page__breadcrumb"><Link href="/dashboard">Dashboard</Link><ArrowRightIcon size={13} /><Link href={`/rooms/${room.id}`}>{room.title}</Link><ArrowRightIcon size={13} /><span>Terbitkan</span></div><RoomProgress status="baking" /><BakeProgressShell roomId={room.id} recipientName={room.recipientName} mediaCount={new Set(studio.sectionPlan.flatMap(section => section.mediaIds)).size} musicName={musicName} directionName={studio.directionCandidates.find(item => item.id === studio.selectedDirectionId)?.name ?? "Cerita versimu"} /></div></AppShell>;
 }

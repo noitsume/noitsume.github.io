@@ -1,5 +1,4 @@
 import { curatedAuras } from "@/config/auras";
-import { curatedSongs } from "@/config/songs";
 import { curatedThemes } from "@/config/themes";
 import { curatedTransitions } from "@/config/transitions";
 import type { Theme } from "@/lib/data/contracts/theme";
@@ -7,16 +6,13 @@ import {
   creativeSelectionSchema,
   type AuraDefinition,
   type CreativeSelection,
-  type SongDefinition,
   type TransitionDefinition,
 } from "./contracts";
 import {
   auraIdSchema,
-  songIdSchema,
   themeIdSchema,
   transitionIdSchema,
   type AuraId,
-  type SongId,
   type ThemeId,
   type TransitionId,
 } from "./ids";
@@ -24,7 +20,6 @@ import {
 const themesById = new Map<ThemeId, Theme>(curatedThemes.map((item): [ThemeId, Theme] => [item.id, item]));
 const aurasById = new Map<AuraId, AuraDefinition>(curatedAuras.map((item): [AuraId, AuraDefinition] => [item.id, item]));
 const transitionsById = new Map<TransitionId, TransitionDefinition>(curatedTransitions.map((item): [TransitionId, TransitionDefinition] => [item.id, item]));
-const songsById = new Map<SongId, SongDefinition>(curatedSongs.map((item): [SongId, SongDefinition] => [item.id, item]));
 
 export class CreativeCatalogError extends Error {
   constructor(
@@ -51,11 +46,6 @@ export function resolveTransition(id: string): TransitionDefinition | null {
   return parsed.success ? transitionsById.get(parsed.data) ?? null : null;
 }
 
-export function resolveSong(id: string): SongDefinition | null {
-  const parsed = songIdSchema.safeParse(id);
-  return parsed.success ? songsById.get(parsed.data) ?? null : null;
-}
-
 export function requireTheme(id: string): Theme {
   const value = resolveTheme(id);
   if (!value) throw new CreativeCatalogError("UNKNOWN_THEME", `Unknown Theme ID: ${id}`);
@@ -71,12 +61,6 @@ export function requireAura(id: string): AuraDefinition {
 export function requireTransition(id: string): TransitionDefinition {
   const value = resolveTransition(id);
   if (!value) throw new CreativeCatalogError("UNKNOWN_TRANSITION", `Unknown Transition ID: ${id}`);
-  return value;
-}
-
-export function requireSong(id: string): SongDefinition {
-  const value = resolveSong(id);
-  if (!value) throw new CreativeCatalogError("UNKNOWN_SONG", `Unknown Song ID: ${id}`);
   return value;
 }
 
@@ -98,14 +82,7 @@ export function validateCreativeSelection(input: unknown): CreativeCompatibility
   const theme = requireTheme(selection.themeId);
   const issues: string[] = [];
 
-  if (selection.backgroundMusic.source === "catalog") {
-    const song = requireSong(selection.backgroundMusic.songId);
-    if (!song.compatibleThemes.includes(theme.id)) {
-      issues.push(`Song ${song.id} is not compatible with Theme ${theme.id}.`);
-    }
-  }
-
-  // Room-uploaded music is validated against Room ownership/storage in Patch 7.
+  // Uploaded music is validated against Room ownership/storage by the Studio service.
   // Theme compatibility must not reject an explicit owner music choice.
 
   for (const auraId of selection.auraIds) {
@@ -183,7 +160,6 @@ export const creativeCatalog = {
   themes: curatedThemes,
   auras: curatedAuras,
   transitions: curatedTransitions,
-  songs: curatedSongs,
 };
 
 const catalogIntegrity = validateCreativeCatalogIntegrity();

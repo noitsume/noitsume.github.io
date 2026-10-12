@@ -90,6 +90,13 @@ export const ownerMediaAnalysisRequestSchema = z.object({
 export const ownerSubmissionActionSchema = z.object({
   submissionIds: z.array(z.string().min(1)).min(1).max(100),
   action: z.enum(["approve", "exclude", "delete"]),
+  // Omission preserves the old "accept whole submission" API. An explicit []
+  // accepts only the wish and permanently removes all attached media.
+  acceptedMediaIds: z.array(z.string().min(1)).max(100).optional(),
+}).superRefine((input, context) => {
+  if (input.acceptedMediaIds !== undefined && (input.action !== "approve" || input.submissionIds.length !== 1)) {
+    context.addIssue({ code: "custom", message: "Pilihan media hanya berlaku untuk satu kiriman yang diterima.", path: ["acceptedMediaIds"] });
+  }
 });
 
 export type CollectorUploadUrlsRequest = z.infer<typeof collectorUploadUrlsRequestSchema>;

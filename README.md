@@ -2,6 +2,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Musik untuk Room sekarang berasal dari MP3 yang diunggah pemilik. Katalog
+soundtrack bawaan dan eksperimen komposisi/blending telah dipindahkan ke
+arsip Legacy. Lihat [kebijakan musik dan lokasi arsip](docs/music-policy.md).
+
+Studio memakai empat langkah: **Momen → Atur Cerita → Musik → Pratinjau & Suasana**.
+Susunan section manual, musik per section, kompatibilitas draf lama, dan aturan
+pemutaran dijelaskan di [Studio authoring](docs/studio-authoring.md).
+
 First, run the development server:
 
 ```bash
@@ -15,6 +23,17 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+Port development ditetapkan ke **3000**, sesuai origin yang diizinkan CORS
+Backblaze B2. Jika port sedang dipakai, hentikan server lokal sebelumnya dengan
+`Ctrl+C`, lalu jalankan `npm run dev` lagi. Server tidak akan otomatis bergeser
+ke 3001: bagi browser, `localhost:3000` dan `localhost:3001` adalah origin berbeda.
+
+Jika sengaja memakai port atau domain lain, tambahkan origin lengkapnya ke
+`B2_CORS_EXTRA_ORIGINS` di `.env.local`, lalu terapkan dengan `npm run b2:cors`
+menggunakan setup key yang sesuai. Mengubah `.env.local` saja tidak memperbarui
+aturan bucket. Respons `201` dari API `upload-urls` hanya menyiapkan URL;
+upload browser masih memerlukan preflight `OPTIONS` dan `PUT` yang lolos CORS.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

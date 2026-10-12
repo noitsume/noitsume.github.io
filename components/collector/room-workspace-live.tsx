@@ -11,17 +11,13 @@ import { workspaceGuidance } from "@/lib/domain/journey";
 import { CollectorSharePanel } from "./collector-share-panel";
 import { MediaInventoryDialog } from "./media-inventory";
 import { SubmissionManager } from "./submission-manager";
+import type { ModerationResult } from "@/lib/collector/moderation-result";
 
 const SYNC_BATCH_WINDOW_MS = 2500;
 
 type WorkspaceData = {
   submissions: Submission[];
   media: Media[];
-  previewUrlByMediaId: Record<string, string>;
-};
-
-type ModerationResult = {
-  promotedMedia: Media[];
   previewUrlByMediaId: Record<string, string>;
 };
 
@@ -45,6 +41,7 @@ function mapSubmission(id: string, data: Record<string, unknown>) {
     status: data.status,
     submittedAt: toIsoString(data.submittedAt),
     reviewedAt: data.reviewedAt ? toIsoString(data.reviewedAt) : null,
+    moderation: data.moderation ?? null,
   });
 }
 
@@ -340,62 +337,28 @@ export function RoomWorkspaceLive({
     flushVersionRef.current += 1;
   }
 
-  function applyModeration(
-    action: "approve" | "exclude" | "delete",
-    submissionIds: string[],
-    result: ModerationResult,
-  ) {
+  function applyModeration(result: ModerationResult) {
     cancelPendingFlush();
-    const idSet = new Set(submissionIds);
-    const affected = submissions.filter((item) => idSet.has(item.id));
-    const transientMediaIds = new Set(
-      affected.flatMap((item) => [
-        ...item.mediaIds,
-        ...item.stagedMedia.map((staged) => staged.id),
-      ]),
-    );
-
-    if (action === "delete") {
-      setSubmissions((current) => current.filter((item) => !idSet.has(item.id)));
-      setMedia((current) => current.filter((item) => !transientMediaIds.has(item.id)));
-      setPreviewUrlByMediaId((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !transientMediaIds.has(id))));
-      for (const id of transientMediaIds) delete previewObjectKeyRef.current[id];
-      return;
+    const removedSubmissions = new Set(result.deletedSubmissionIds);
+    const reviewedIds = new Set([...result.reviewedSubmissions.map(item => item.id), ...result.deletedSubmissionIds]);
+    const acceptedIds = new Set(result.promotedMedia.map(item => item.id));
+    const removedIds = new Set(result.removedMediaIds);
+    // A retried response may arrive after Firestore already cleared staging.
+    // Also clear local transient items from the original submission snapshot.
+    for (const item of submissions.filter(item => reviewedIds.has(item.id))) {
+      for (const id of [...item.mediaIds, ...item.stagedMedia.map(media => media.id)]) {
+        if (!acceptedIds.has(id)) removedIds.add(id);
+      }
     }
-
-    const now = new Date().toISOString();
-    if (action === "exclude") {
-      setSubmissions((current) => current.map((item) => idSet.has(item.id)
-        ? { ...item, status: "excluded", reviewedAt: now, mediaIds: [], stagedMedia: [] }
-        : item));
-      setMedia((current) => current.filter((item) => !transientMediaIds.has(item.id)));
-      setPreviewUrlByMediaId((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !transientMediaIds.has(id))));
-      for (const id of transientMediaIds) delete previewObjectKeyRef.current[id];
-      return;
-    }
-
-    const promotedBySubmission = new Map<string, Media[]>();
-    for (const item of result.promotedMedia) {
-      if (!item.submissionId) continue;
-      const list = promotedBySubmission.get(item.submissionId) ?? [];
-      list.push(item);
-      promotedBySubmission.set(item.submissionId, list);
-      previewObjectKeyRef.current[item.id] = item.storageObjectKey;
-    }
-
-    setSubmissions((current) => current.map((item) => {
-      if (!idSet.has(item.id)) return item;
-      const promoted = promotedBySubmission.get(item.id) ?? [];
-      return {
-        ...item,
-        status: "approved",
-        reviewedAt: now,
-        mediaIds: promoted.length > 0 ? promoted.map((mediaItem) => mediaItem.id) : item.mediaIds,
-        stagedMedia: [],
-      };
-    }));
-    setMedia((current) => mergeById(current, result.promotedMedia));
-    setPreviewUrlByMediaId((current) => ({ ...current, ...result.previewUrlByMediaId }));
+    const mergeSubmissions = (current: Submission[]) => mergeById(current.filter(item => !removedSubmissions.has(item.id)), result.reviewedSubmissions);
+    const mergeMedia = (current: Media[]) => mergeById(current.filter(item => !removedIds.has(item.id)), result.promotedMedia);
+    stagedSubmissions.current = mergeSubmissions(stagedSubmissions.current);
+    stagedMedia.current = mergeMedia(stagedMedia.current);
+    setSubmissions(mergeSubmissions);
+    setMedia(mergeMedia);
+    setPreviewUrlByMediaId(current => ({ ...Object.fromEntries(Object.entries(current).filter(([id]) => !removedIds.has(id))), ...result.previewUrlByMediaId }));
+    for (const id of removedIds) delete previewObjectKeyRef.current[id];
+    for (const item of result.promotedMedia) previewObjectKeyRef.current[item.id] = item.storageObjectKey;
   }
 
   function applyOwnerUpload(result: { media: Media[]; previewUrlByMediaId: Record<string, string> }) {
@@ -456,7 +419,7 @@ export function RoomWorkspaceLive({
   const inventoryMedia = media.filter(item => item.source === "owner" || !item.submissionId || statuses.get(item.submissionId) === "approved");
   const contributorNames = contributorSubmissions.map(item => item.contributorName?.trim()).filter((name): name is string => Boolean(name));
   const isCollecting = roomStatus === "collecting";
-  const canContinue = roomStatus === "configuring" || roomStatus === "ready" || (roomStatus === "closed" && pendingSubmissions.length === 0 && inventoryMedia.length > 0);
+  const canContinue = roomStatus === "configuring" || roomStatus === "ready" || (roomStatus === "closed" && pendingSubmissions.length === 0);
   const guidance = workspaceGuidance(roomStatus, pendingSubmissions.length, inventoryMedia.length);
   const base = "/rooms/" + encodeURIComponent(roomId);
   const guidanceAction = guidance.action === "finish" ? <Link className="ui-button ui-button--primary" href={base + "/finish"}>Bagikan kejutan →</Link>
@@ -489,7 +452,7 @@ export function RoomWorkspaceLive({
       </aside>
     </div>
     {studioError ? <p className="form-error" role="alert">{studioError}</p> : null}
-    <div className="journey-actionbar"><div className="journey-actionbar__copy"><strong>{canContinue ? "Siap merangkai cerita" : "Sebelum masuk Studio"}</strong><small>{isCollecting ? "Tutup pengumpulan setelah semua kiriman masuk." : pendingSubmissions.length ? pendingSubmissions.length + " kiriman perlu dipilih." : inventoryMedia.length ? "Pilihan media dan musik tersimpan di setiap langkah." : "Tambahkan minimal satu foto atau video."}</small></div><div className="journey-actionbar__buttons"><Link className="ui-button ui-button--ghost" href="/dashboard">← Kenangan saya</Link><button className="ui-button ui-button--primary" disabled={!canContinue || studioStarting} onClick={enterStudio}>{studioStarting ? "Membuka…" : roomStatus === "ready" ? "Ubah cerita" : "Lanjut ke Studio →"}</button></div></div>
+    <div className="journey-actionbar"><div className="journey-actionbar__copy"><strong>{canContinue ? "Siap merangkai cerita" : "Sebelum masuk Studio"}</strong><small>{isCollecting ? "Tutup pengumpulan setelah semua kiriman masuk." : pendingSubmissions.length ? pendingSubmissions.length + " kiriman perlu dipilih." : inventoryMedia.length ? "Pilihan media dan musik tersimpan di setiap langkah." : "Mulai dari section Teks, atau tambahkan foto dan video."}</small></div><div className="journey-actionbar__buttons"><Link className="ui-button ui-button--ghost" href="/dashboard">← Kenangan saya</Link><button className="ui-button ui-button--primary" disabled={!canContinue || studioStarting} onClick={enterStudio}>{studioStarting ? "Membuka…" : roomStatus === "ready" ? "Ubah cerita" : "Lanjut ke Studio →"}</button></div></div>
     <MediaInventoryDialog open={inventoryOpen} roomId={roomId} media={inventoryMedia} previewUrlByMediaId={previewUrlByMediaId} onClose={() => setInventoryOpen(false)} onOwnerUploaded={applyOwnerUpload} onMediaAnalyzed={applyMediaAnalyzed} />
   </>;
 }

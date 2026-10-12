@@ -24,6 +24,16 @@ const version='2026-10-08T12:00:00.000Z';
 const manifest={schemaVersion:1,receiverId:'receiver-a',room:{id:'room',title:'QA',recipientName:'QA',occasionId:'birthday'},theme:{id:'theme',name:'Theme',palette:{background:'#000000',surface:'#222222',primary:'#ffffff',accent:'#eeeeee',text:'#ffffff',muted:'#cccccc'},typography:{displayFamily:'Georgia',bodyFamily:'Arial',displayWeight:400,bodyWeight:400,letterSpacingEm:0},backgroundAssetId:'photo',decorations:[]},assets:[{id:'photo',kind:'media',contentType:'image/png',delivery:'public',publicPath:'/qa.png',mediaId:'media'}],media:[{id:'media',assetId:'photo',type:'photo',contentType:'image/png',width:1,height:1,durationSec:null,contributorName:null,originalFileName:'qa.png'}],wishes:[{id:'wish',text:'a'.repeat(3000),contributorName:null}],music:{name:'Music',trackAssetId:'music',bpm:100,durationSec:10,mood:[],beatmapSource:'asset',beatmapAssetId:'beats',beats:[],onsets:[],energyCurve:[]},experience:{schemaVersion:1,directorVersion:'director-v1',sections:[]}};
 const room=()=>({ownerUid:'owner',status:'configuring',title:'QA',recipientName:'QA',themeId:'theme',receiverId:null,config:{studio:{updatedAt:version}}});
 const input=(receiverId='receiver-a')=>({roomId:'room',receiverId,manifest:{...manifest,receiverId},assets:[],bakedAt:version,expectedStudioUpdatedAt:version});
+
+test('already published catalog music remains readable after owner-upload-only change', async () => {
+ const songPath = '/creative/songs/7d89cc662f46c0c3dbf2d1d6f1e3da5da3302d64f20f246e4a09fffdd1b275bd/track.wav';
+ const published = { ...manifest, revision: 1, bakedAt: Timestamp.fromDate(new Date(version)), assets: [...manifest.assets, { id:'music',kind:'music',contentType:'audio/wav',delivery:'public',publicPath:songPath,mediaId:null }], experience: { ...manifest.experience, backgroundMusic: { source:'catalog',songId:'song_afterglow' } } };
+ const db = fakeDb({ 'receivers/receiver-a': published }); shared.firestoreDb = () => db;
+ const result = await new FirestoreReceiverRepository().getManifest('receiver-a');
+ assert.equal(result.experience.backgroundMusic.source, 'catalog');
+ assert.equal(result.assets.find(asset => asset.id === 'music').publicPath, songPath);
+ assert.ok(require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'public', songPath)));
+});
 test('simultaneous first publication keeps one stable link and revision',async()=>{
  const db=fakeDb({'rooms/room':room()});shared.firestoreDb=()=>db;
  const repo=new FirestoreReceiverRepository();const [a,b]=await Promise.all([repo.publishSnapshot(input()),repo.publishSnapshot(input('receiver-b'))]);

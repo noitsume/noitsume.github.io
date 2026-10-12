@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { audioFeaturesSchema } from "@/lib/audio/features";
 import {
   auraIdSchema,
   backgroundMusicMixPolicySchema,
@@ -23,11 +24,28 @@ export const studioMediaSettingSchema = z.object({
   fit: z.enum(["cover", "contain"]),
 });
 
+export const sceneAtmosphereSchema = z.object({
+  world: z.enum(["light", "resonance", "rain", "flow", "spectrum"]).optional(),
+  backgroundWorld: z.enum(["light", "resonance", "rain", "flow", "spectrum"]).optional(),
+  sharpAccents: z.boolean().optional(),
+  intensity: z.enum(["calm", "balanced", "lively"]),
+  response: z.enum(["off", "energy", "beat"]),
+  motion: z.enum(["watermill", "soft", "none"]),
+  backgroundAura: z.boolean(),
+});
+export const defaultSceneAtmosphere = sceneAtmosphereSchema.parse({ world: "rain", backgroundWorld: "rain", sharpAccents: false, intensity: "calm", response: "energy", motion: "watermill", backgroundAura: true });
+
 export const studioSectionPlanSchema = z.object({
   id: z.string().regex(/^section_[A-Za-z0-9_-]+$/),
-  type: z.enum(["video", "photo-slide"]),
-  mediaIds: z.array(z.string().min(1)).min(1),
+  type: z.enum(["video", "photo", "video-slide", "photo-slide", "text"]),
+  // Empty slots are valid in a saved draft; the publication gate checks completeness.
+  mediaIds: z.array(z.string().min(1)).max(100),
   order: z.number().int().nonnegative(),
+  title: z.string().trim().max(100).optional(),
+  caption: z.string().trim().max(2000).optional(),
+  emphasis: z.boolean().optional(),
+  music: backgroundMusicSelectionSchema.nullable().optional(),
+  atmosphere: sceneAtmosphereSchema.nullable().optional(),
 });
 
 export const storyAnchorsSchema = z.object({
@@ -47,7 +65,7 @@ export const experienceMediaTreatmentSchema = z.object({
 
 export const experienceSectionSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(["hero", "video", "photo-slide"]),
+  type: z.enum(["hero", "video", "photo", "video-slide", "photo-slide", "text"]),
   mediaIds: z.array(z.string().min(1)),
   role: mediaStoryRoleSchema.nullable(),
   auraIds: z.array(auraIdSchema).max(2),
@@ -58,11 +76,15 @@ export const experienceSectionSchema = z.object({
   beatAlignment: z.enum(["none", "soft", "strong"]),
   audioMix: sectionAudioMixInstructionSchema,
   mediaTreatment: z.array(experienceMediaTreatmentSchema),
-  microCopy: z.string().trim().max(180).nullable(),
+  microCopy: z.string().trim().max(2000).nullable(),
   wishIds: z.array(z.string().min(1)).max(8),
+  title: z.string().trim().max(100).optional(),
+  music: backgroundMusicSelectionSchema.nullable().optional(),
+  atmosphere: sceneAtmosphereSchema.optional(),
 });
 
 export const experienceDnaSchema = z.object({
+  rendererVersion: z.enum(["ruang-cahaya-v1", "rintik-resonansi-v2"]).optional(),
   schemaVersion: z.literal(EXPERIENCE_DNA_VERSION),
   id: z.string().regex(/^direction_[A-Za-z0-9_-]{8,}$/),
   directorVersion: z.literal(EXPERIENCE_DIRECTOR_VERSION),
@@ -72,12 +94,14 @@ export const experienceDnaSchema = z.object({
   summary: z.string().trim().min(1).max(420),
   direction: z.string().trim().min(1).max(120),
   themeId: themeIdSchema,
-  backgroundMusic: backgroundMusicSelectionSchema,
+  backgroundMusic: backgroundMusicSelectionSchema.nullable(),
   backgroundMusicMix: backgroundMusicMixPolicySchema,
   storyArc: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
   energyCurve: z.array(z.number().min(0).max(1)).min(2).max(24),
   emotionCurve: z.array(z.number().min(0).max(1)).min(2).max(24),
-  sections: z.array(experienceSectionSchema).min(2).max(80),
+  sections: z.array(experienceSectionSchema).min(1).max(80),
+  authoringVersion: z.literal(2).optional(),
+  atmosphere: sceneAtmosphereSchema.optional(),
 });
 
 
@@ -101,8 +125,10 @@ export const wishIntelligenceRecordSchema = z.object({
   analyzedAt: z.string().datetime(),
 });
 
-export const roomStudioConfigSchema = z.object({
+const currentRoomStudioConfigSchema = z.object({
   schemaVersion: z.literal(STUDIO_CONFIG_VERSION),
+  authoringVersion: z.literal(2).optional(),
+  atmosphere: sceneAtmosphereSchema.optional(),
   selectedMedia: z.array(studioMediaSettingSchema),
   sectionPlan: z.array(studioSectionPlanSchema),
   storyAnchors: storyAnchorsSchema,
@@ -115,9 +141,26 @@ export const roomStudioConfigSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
+// Read retired drafts without discarding their media/story choices. Only stored
+// config is normalized; the settings request below rejects catalog selections.
+export function normalizeRetiredMusicDraft(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const stored = raw as Record<string, unknown>;
+  const music = stored.backgroundMusic;
+  if (music && typeof music === "object" && "source" in music && music.source === "catalog") {
+    return { ...stored, backgroundMusic: null, directionCandidates: [], selectedDirectionId: null };
+  }
+  return raw;
+}
+
+export const roomStudioConfigSchema = z.preprocess(normalizeRetiredMusicDraft, currentRoomStudioConfigSchema);
+
 export const studioSettingsRequestSchema = z.object({
   expectedStudioUpdatedAt: z.string().datetime().optional(),
-  selectedMedia: z.array(studioMediaSettingSchema).min(1).max(100),
+  selectedMedia: z.array(studioMediaSettingSchema).max(100),
+  sectionPlan: z.array(studioSectionPlanSchema).max(80).optional(),
+  atmosphere: sceneAtmosphereSchema.optional(),
+  preparePreview: z.boolean().optional(),
   storyAnchors: storyAnchorsSchema,
   storyAnchorsConfirmed: z.boolean(),
   themeId: themeIdSchema,
@@ -146,6 +189,7 @@ export const roomMusicCommitRequestSchema = z.object({
 });
 
 export const roomMusicAnalysisInputSchema = z.object({
+  features: audioFeaturesSchema.optional(),
   hash: z.string().regex(/^[a-f0-9]{64}$/),
   durationSec: z.number().finite().positive().max(20 * 60),
   bpm: z.number().finite().min(40).max(240),
@@ -167,6 +211,7 @@ export const directorGenerateRequestSchema = z.object({
 });
 
 export type StudioMediaSetting = z.infer<typeof studioMediaSettingSchema>;
+export type SceneAtmosphere = z.infer<typeof sceneAtmosphereSchema>;
 export type StudioSectionPlan = z.infer<typeof studioSectionPlanSchema>;
 export type StoryAnchors = z.infer<typeof storyAnchorsSchema>;
 export type ExperienceMediaTreatment = z.infer<typeof experienceMediaTreatmentSchema>;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CollectorForm } from "@/components/collector";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { AmbientBackground, ThemeToggle } from "@/components/theme";
 import { CalendarIcon, LockIcon } from "@/components/ui";
 import { brand } from "@/config/brand";
@@ -44,8 +45,7 @@ export default async function CollectorPage({ params }: PageProps) {
       <AmbientBackground />
       <header className="collector-navbar">
         <Link className="brand-lockup" href="/" aria-label={brand.name}>
-          <span className="brand-mark" aria-hidden="true"><span>{brand.shortName}</span></span>
-          <strong>{brand.name}</strong>
+          <BrandLogo />
         </Link>
         <ThemeToggle />
       </header>

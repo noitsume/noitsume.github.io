@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [aria-hidden] [ref=e4]: ✦
+      - paragraph [ref=e5]: SESUATU YANG DIBUAT KHUSUS
+      - heading "Untuk Sahabat." [level=1] [ref=e6]
+      - paragraph [ref=e7]: Ada cerita, tawa, dan ucapan yang menunggumu di sini.
+      - button "Buka kejutan" [ref=e8] [cursor=pointer]: Buka kejutan →
+      - generic [ref=e9]: Musik akan diputar. Nikmati dengan suara yang nyaman.
+  - button "Open Next.js Dev Tools" [ref=e15] [cursor=pointer]
+  - alert [ref=e19]

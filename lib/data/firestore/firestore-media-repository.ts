@@ -13,6 +13,7 @@ function mapMedia(id: string, data: DocumentData): Media {
     submissionId: data.submissionId ?? null,
     type: data.type,
     storageObjectKey: data.storageObjectKey,
+    ...(data.audioBeatmap ? { audioBeatmap: data.audioBeatmap } : {}),
     originalFileName: data.originalFileName,
     contentType: data.contentType,
     sizeBytes: Number(data.sizeBytes ?? 0),
@@ -146,6 +147,10 @@ export class FirestoreMediaRepository implements MediaRepository {
         technicalSignals: media.technicalSignals,
         mediaIntelligence: media.mediaIntelligence,
       });
+  }
+
+  async updateAudioBeatmap(roomId: string, mediaId: string, beatmap: NonNullable<Media["audioBeatmap"]>): Promise<void> {
+    await firestoreDb().collection("rooms").doc(roomId).collection("media").doc(mediaId).update({ audioBeatmap: beatmap });
   }
 
   async deleteMany(roomId: string, mediaIds: string[]): Promise<void> {

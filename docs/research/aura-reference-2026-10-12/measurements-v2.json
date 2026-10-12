@@ -1,0 +1,889 @@
+{
+  "sourceName": "YTDown.com_Shorts_Media_aOy9GnWUoag_Jedag-Jedug-Epilepsi-Sakit-Mata_001_480p.mp4",
+  "sha256": "cd664e4f6cfbc825019ba4637955f5f591615d0f3ec25d397dca53d1f239054d",
+  "metadata": {
+    "videoDurationSec": 27.566667,
+    "audioDurationSec": 27.678186,
+    "decodedAudioDurationSec": 27.678185941043083,
+    "videoFrames": 827,
+    "fps": 30.0,
+    "videoStart": "0.000000",
+    "audioStart": "0.000000",
+    "frameSpacingMinMaxSec": [
+      0.03333299999999895,
+      0.03333400000000353
+    ],
+    "colorSpace": "smpte170m",
+    "colorTransfer": "bt709"
+  },
+  "method": {
+    "audioSampleRate": 22050,
+    "hop": 128,
+    "windowSamples": [
+      1024,
+      2048
+    ],
+    "stereoPolicy": "average channel power, no waveform downmix cancellation",
+    "novelty": "positive difference of log1p(100*magnitude), subtract 0.2s local mean, divide by P95",
+    "candidateMinSpacingSec": 0.1,
+    "primaryThresholdP95Units": 0.65,
+    "blackDefinition": "at least 98% pixels have all RGB code values <= 12",
+    "nearWhiteDefinition": "at least 98% pixels have all RGB code values >= 243",
+    "alignmentToleranceSec": 0.05,
+    "shiftControl": "400 seeded circular shifts of audio events inside active window; not a calibrated significance test",
+    "localDensityControl": "400 independent rotations within 2-second blocks with circular observed/control distances at 20, 33.33, 50ms tolerance",
+    "activeWindowSec": [
+      3.0,
+      27.566666333333334
+    ],
+    "limitations": [
+      "No human onset/beat annotation",
+      "No subjective listening assessment",
+      "Brightness proxy is RGB code mean, not calibrated relative display luminance",
+      "30 fps limits video temporal resolution",
+      "Short clip and parameter sensitivity preclude universal timing or genre claims"
+    ]
+  },
+  "frameCounts": {
+    "black": 248,
+    "nearWhite": 67,
+    "blackToVisible": 185,
+    "largePositiveBrightnessChange": 216
+  },
+  "longestStrictAlternatingRuns": [
+    {
+      "startSec": 4.066667,
+      "endSec": 4.600000333333333,
+      "frames": 16,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 7.133333,
+      "endSec": 7.666666333333334,
+      "frames": 16,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 15.533333,
+      "endSec": 16.066666333333334,
+      "frames": 16,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 18.733333,
+      "endSec": 19.266666333333333,
+      "frames": 16,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 21.966667,
+      "endSec": 22.500000333333336,
+      "frames": 16,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 25.233333,
+      "endSec": 25.766666333333333,
+      "frames": 16,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 4.6,
+      "endSec": 5.100000333333333,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 5.1,
+      "endSec": 5.600000333333333,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 7.666667,
+      "endSec": 8.166666333333334,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 8.166667,
+      "endSec": 8.666666333333334,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 16.066667,
+      "endSec": 16.566666333333334,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 16.566667,
+      "endSec": 17.066666333333334,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 17.066667,
+      "endSec": 17.566666333333334,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 17.566667,
+      "endSec": 18.066666333333334,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    },
+    {
+      "startSec": 19.266667,
+      "endSec": 19.766666333333333,
+      "frames": 15,
+      "cyclesPerSec": 15.0
+    }
+  ],
+  "sections": [
+    {
+      "startSec": 0,
+      "endSec": 3,
+      "blackFrameFraction": 0.289,
+      "nearWhiteFrameFraction": 0.011,
+      "blackToVisibleCount": 1,
+      "broadbandOnsetCandidates": 8,
+      "spectralEnergyFractionLowMidHigh": [
+        0.5879999995231628,
+        0.3179999887943268,
+        0.09399999678134918
+      ],
+      "tempoCandidates": []
+    },
+    {
+      "startSec": 3,
+      "endSec": 6,
+      "blackFrameFraction": 0.289,
+      "nearWhiteFrameFraction": 0.089,
+      "blackToVisibleCount": 23,
+      "broadbandOnsetCandidates": 15,
+      "spectralEnergyFractionLowMidHigh": [
+        0.414000004529953,
+        0.4339999854564667,
+        0.15199999511241913
+      ],
+      "tempoCandidates": []
+    },
+    {
+      "startSec": 6,
+      "endSec": 9,
+      "blackFrameFraction": 0.289,
+      "nearWhiteFrameFraction": 0.233,
+      "blackToVisibleCount": 23,
+      "broadbandOnsetCandidates": 17,
+      "spectralEnergyFractionLowMidHigh": [
+        0.4830000102519989,
+        0.3889999985694885,
+        0.12800000607967377
+      ],
+      "tempoCandidates": []
+    },
+    {
+      "startSec": 9,
+      "endSec": 15,
+      "blackFrameFraction": 0.0,
+      "nearWhiteFrameFraction": 0.128,
+      "blackToVisibleCount": 0,
+      "broadbandOnsetCandidates": 23,
+      "spectralEnergyFractionLowMidHigh": [
+        0.7250000238418579,
+        0.20499999821186066,
+        0.07000000029802322
+      ],
+      "tempoCandidates": [
+        {
+          "bpm": 99.38,
+          "autocorrelation": 0.657
+        },
+        {
+          "bpm": 149.8,
+          "autocorrelation": 0.635
+        },
+        {
+          "bpm": 74.36,
+          "autocorrelation": 0.575
+        },
+        {
+          "bpm": 59.4,
+          "autocorrelation": 0.541
+        }
+      ]
+    },
+    {
+      "startSec": 15,
+      "endSec": 21,
+      "blackFrameFraction": 0.461,
+      "nearWhiteFrameFraction": 0.011,
+      "blackToVisibleCount": 73,
+      "broadbandOnsetCandidates": 50,
+      "spectralEnergyFractionLowMidHigh": [
+        0.621999979019165,
+        0.28200000524520874,
+        0.0949999988079071
+      ],
+      "tempoCandidates": [
+        {
+          "bpm": 99.38,
+          "autocorrelation": 0.711
+        },
+        {
+          "bpm": 118.8,
+          "autocorrelation": 0.679
+        },
+        {
+          "bpm": 149.8,
+          "autocorrelation": 0.625
+        },
+        {
+          "bpm": 198.77,
+          "autocorrelation": 0.61
+        }
+      ]
+    },
+    {
+      "startSec": 21,
+      "endSec": 27.566666333333334,
+      "blackFrameFraction": 0.442,
+      "nearWhiteFrameFraction": 0.061,
+      "blackToVisibleCount": 65,
+      "broadbandOnsetCandidates": 43,
+      "spectralEnergyFractionLowMidHigh": [
+        0.7149999737739563,
+        0.23100000619888306,
+        0.05400000140070915
+      ],
+      "tempoCandidates": [
+        {
+          "bpm": 198.77,
+          "autocorrelation": 0.618
+        },
+        {
+          "bpm": 147.66,
+          "autocorrelation": 0.616
+        },
+        {
+          "bpm": 59.4,
+          "autocorrelation": 0.612
+        },
+        {
+          "bpm": 74.36,
+          "autocorrelation": 0.589
+        }
+      ]
+    }
+  ],
+  "tempoCandidatesGlobal": [
+    {
+      "bpm": 99.38,
+      "autocorrelation": 0.677
+    },
+    {
+      "bpm": 74.36,
+      "autocorrelation": 0.614
+    },
+    {
+      "bpm": 149.8,
+      "autocorrelation": 0.612
+    },
+    {
+      "bpm": 59.4,
+      "autocorrelation": 0.6
+    }
+  ],
+  "syntheticCalibration": {
+    "fixture": "Four isolated 25ms decaying noise bursts, stereo opposite polarity. No musical ground truth.",
+    "knownTimesSec": [
+      0.4,
+      1.1,
+      1.95,
+      2.7
+    ],
+    "candidateTimesSec": [
+      0.394739,
+      1.091338,
+      1.944671,
+      2.693515
+    ],
+    "nearestErrorsMs": [
+      5.261,
+      8.662,
+      5.329,
+      6.485
+    ],
+    "monoWaveformWouldCancel": true
+  },
+  "alignmentSensitivity": [
+    {
+      "nfft": 1024,
+      "thresholdRelativeToP95": 0.35,
+      "band": "low",
+      "videoEvents": 184,
+      "audioCandidates": 169,
+      "within50msFraction": 0.7119565217391305,
+      "medianNearestMs": 35.66910090703068,
+      "shiftControlMean": 0.6907201086956521,
+      "shiftControlP05P95": [
+        0.6467391304347826,
+        0.7391304347826086
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.27,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.27717391304347827,
+          "controlMean": 0.2830163043478261,
+          "controlP05P95": [
+            0.24429347826086958,
+            0.32065217391304346
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.4782608695652174,
+          "controlMean": 0.47274456521739133,
+          "controlP05P95": [
+            0.44565217391304346,
+            0.4945652173913043
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.7119565217391305,
+          "controlMean": 0.7040217391304346,
+          "controlP05P95": [
+            0.6682065217391304,
+            0.7445652173913043
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 1024,
+      "thresholdRelativeToP95": 0.35,
+      "band": "broadband",
+      "videoEvents": 184,
+      "audioCandidates": 174,
+      "within50msFraction": 0.9130434782608695,
+      "medianNearestMs": 29.43310657596321,
+      "shiftControlMean": 0.7005163043478261,
+      "shiftControlP05P95": [
+        0.6304347826086957,
+        0.782608695652174
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.0,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.33695652173913043,
+          "controlMean": 0.31953804347826087,
+          "controlP05P95": [
+            0.2717391304347826,
+            0.3641304347826087
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.5869565217391305,
+          "controlMean": 0.5319157608695653,
+          "controlP05P95": [
+            0.4945652173913043,
+            0.5706521739130435
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.907608695652174,
+          "controlMean": 0.7887092391304347,
+          "controlP05P95": [
+            0.75,
+            0.8260869565217391
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 1024,
+      "thresholdRelativeToP95": 0.65,
+      "band": "low",
+      "videoEvents": 184,
+      "audioCandidates": 149,
+      "within50msFraction": 0.6304347826086957,
+      "medianNearestMs": 39.16133106576014,
+      "shiftControlMean": 0.6091983695652174,
+      "shiftControlP05P95": [
+        0.5597826086956522,
+        0.6630434782608695
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.3,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.25,
+          "controlMean": 0.2549456521739131,
+          "controlP05P95": [
+            0.21739130434782608,
+            0.29347826086956524
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.42934782608695654,
+          "controlMean": 0.4260461956521739,
+          "controlP05P95": [
+            0.40217391304347827,
+            0.45108695652173914
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.6304347826086957,
+          "controlMean": 0.6339130434782609,
+          "controlP05P95": [
+            0.592391304347826,
+            0.6793478260869565
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 1024,
+      "thresholdRelativeToP95": 0.65,
+      "band": "broadband",
+      "videoEvents": 184,
+      "audioCandidates": 148,
+      "within50msFraction": 0.875,
+      "medianNearestMs": 30.748465986394358,
+      "shiftControlMean": 0.5948097826086957,
+      "shiftControlP05P95": [
+        0.4891304347826087,
+        0.7067934782608694
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.0,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.30434782608695654,
+          "controlMean": 0.29091032608695655,
+          "controlP05P95": [
+            0.25,
+            0.33695652173913043
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.5543478260869565,
+          "controlMean": 0.48460597826086954,
+          "controlP05P95": [
+            0.44565217391304346,
+            0.5163043478260869
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.8695652173913043,
+          "controlMean": 0.7196331521739131,
+          "controlP05P95": [
+            0.6847826086956522,
+            0.7608695652173914
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 1024,
+      "thresholdRelativeToP95": 1.0,
+      "band": "low",
+      "videoEvents": 184,
+      "audioCandidates": 108,
+      "within50msFraction": 0.44565217391304346,
+      "medianNearestMs": 54.058956916097856,
+      "shiftControlMean": 0.44381793478260867,
+      "shiftControlP05P95": [
+        0.3695652173913043,
+        0.5002717391304345
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.565,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.17391304347826086,
+          "controlMean": 0.18550271739130436,
+          "controlP05P95": [
+            0.14673913043478262,
+            0.21739130434782608
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.30434782608695654,
+          "controlMean": 0.3115353260869565,
+          "controlP05P95": [
+            0.28804347826086957,
+            0.33152173913043476
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.44565217391304346,
+          "controlMean": 0.46601902173913046,
+          "controlP05P95": [
+            0.42934782608695654,
+            0.5054347826086957
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 1024,
+      "thresholdRelativeToP95": 1.0,
+      "band": "broadband",
+      "videoEvents": 184,
+      "audioCandidates": 110,
+      "within50msFraction": 0.6847826086956522,
+      "medianNearestMs": 39.13815532879816,
+      "shiftControlMean": 0.44129076086956526,
+      "shiftControlP05P95": [
+        0.358695652173913,
+        0.5597826086956522
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.0,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.24456521739130435,
+          "controlMean": 0.22777173913043477,
+          "controlP05P95": [
+            0.19021739130434784,
+            0.266304347826087
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.42934782608695654,
+          "controlMean": 0.37841032608695657,
+          "controlP05P95": [
+            0.34782608695652173,
+            0.4076086956521739
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.6793478260869565,
+          "controlMean": 0.5615760869565217,
+          "controlP05P95": [
+            0.5271739130434783,
+            0.5980978260869563
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 2048,
+      "thresholdRelativeToP95": 0.35,
+      "band": "low",
+      "videoEvents": 184,
+      "audioCandidates": 159,
+      "within50msFraction": 0.6847826086956522,
+      "medianNearestMs": 34.716553287982066,
+      "shiftControlMean": 0.6476766304347826,
+      "shiftControlP05P95": [
+        0.6032608695652174,
+        0.6956521739130435
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.1125,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.29891304347826086,
+          "controlMean": 0.26467391304347826,
+          "controlP05P95": [
+            0.22282608695652173,
+            0.3046195652173911
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.4782608695652174,
+          "controlMean": 0.44452445652173905,
+          "controlP05P95": [
+            0.42391304347826086,
+            0.4673913043478261
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.6793478260869565,
+          "controlMean": 0.6625951086956522,
+          "controlP05P95": [
+            0.6195652173913043,
+            0.7065217391304348
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 2048,
+      "thresholdRelativeToP95": 0.35,
+      "band": "broadband",
+      "videoEvents": 184,
+      "audioCandidates": 152,
+      "within50msFraction": 0.7989130434782609,
+      "medianNearestMs": 33.53741496598417,
+      "shiftControlMean": 0.6141983695652173,
+      "shiftControlP05P95": [
+        0.532608695652174,
+        0.6956521739130435
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.0,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.27717391304347827,
+          "controlMean": 0.2822961956521739,
+          "controlP05P95": [
+            0.2391304347826087,
+            0.32608695652173914
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.4945652173913043,
+          "controlMean": 0.4704076086956522,
+          "controlP05P95": [
+            0.43994565217391307,
+            0.5
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.7934782608695652,
+          "controlMean": 0.7005842391304347,
+          "controlP05P95": [
+            0.6630434782608695,
+            0.7391304347826086
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 2048,
+      "thresholdRelativeToP95": 0.65,
+      "band": "low",
+      "videoEvents": 184,
+      "audioCandidates": 130,
+      "within50msFraction": 0.5815217391304348,
+      "medianNearestMs": 45.46468594104347,
+      "shiftControlMean": 0.5293070652173912,
+      "shiftControlP05P95": [
+        0.483695652173913,
+        0.5815217391304348
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.0575,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.2391304347826087,
+          "controlMean": 0.22296195652173914,
+          "controlP05P95": [
+            0.1793478260869565,
+            0.266304347826087
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.3967391304347826,
+          "controlMean": 0.37539402173913045,
+          "controlP05P95": [
+            0.3532608695652174,
+            0.3967391304347826
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.5760869565217391,
+          "controlMean": 0.5610597826086956,
+          "controlP05P95": [
+            0.5163043478260869,
+            0.6086956521739131
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 2048,
+      "thresholdRelativeToP95": 0.65,
+      "band": "broadband",
+      "videoEvents": 184,
+      "audioCandidates": 124,
+      "within50msFraction": 0.7065217391304348,
+      "medianNearestMs": 36.93894217686999,
+      "shiftControlMean": 0.4986413043478261,
+      "shiftControlP05P95": [
+        0.41847826086956524,
+        0.5978260869565217
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.0,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.2391304347826087,
+          "controlMean": 0.24296195652173913,
+          "controlP05P95": [
+            0.20652173913043478,
+            0.2826086956521739
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.42934782608695654,
+          "controlMean": 0.40555706521739127,
+          "controlP05P95": [
+            0.375,
+            0.43478260869565216
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.7010869565217391,
+          "controlMean": 0.6039402173913043,
+          "controlP05P95": [
+            0.5703804347826087,
+            0.6413043478260869
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 2048,
+      "thresholdRelativeToP95": 1.0,
+      "band": "low",
+      "videoEvents": 184,
+      "audioCandidates": 94,
+      "within50msFraction": 0.3858695652173913,
+      "medianNearestMs": 65.48752834467209,
+      "shiftControlMean": 0.38415760869565213,
+      "shiftControlP05P95": [
+        0.33152173913043476,
+        0.44021739130434784
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.5075,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.1793478260869565,
+          "controlMean": 0.1539538043478261,
+          "controlP05P95": [
+            0.11956521739130435,
+            0.19021739130434784
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.2717391304347826,
+          "controlMean": 0.25974184782608695,
+          "controlP05P95": [
+            0.23369565217391305,
+            0.2826086956521739
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.3858695652173913,
+          "controlMean": 0.3906114130434783,
+          "controlP05P95": [
+            0.34782608695652173,
+            0.42934782608695654
+          ]
+        }
+      ]
+    },
+    {
+      "nfft": 2048,
+      "thresholdRelativeToP95": 1.0,
+      "band": "broadband",
+      "videoEvents": 184,
+      "audioCandidates": 81,
+      "within50msFraction": 0.4673913043478261,
+      "medianNearestMs": 54.580832199546236,
+      "shiftControlMean": 0.32516304347826086,
+      "shiftControlP05P95": [
+        0.2608695652173913,
+        0.41304347826086957
+      ],
+      "fractionOfShiftControlsAtLeastObserved": 0.005,
+      "localDensityControl": [
+        {
+          "toleranceMs": 20.0,
+          "observedFraction": 0.17391304347826086,
+          "controlMean": 0.16476902173913047,
+          "controlP05P95": [
+            0.1358695652173913,
+            0.1956521739130435
+          ]
+        },
+        {
+          "toleranceMs": 33.333,
+          "observedFraction": 0.29347826086956524,
+          "controlMean": 0.27421195652173913,
+          "controlP05P95": [
+            0.25,
+            0.29891304347826086
+          ]
+        },
+        {
+          "toleranceMs": 50.0,
+          "observedFraction": 0.46195652173913043,
+          "controlMean": 0.4084239130434782,
+          "controlP05P95": [
+            0.375,
+            0.4404891304347824
+          ]
+        }
+      ]
+    }
+  ],
+  "alignmentExamples": [
+    {
+      "selection": "near",
+      "visualTimeSec": 24.3,
+      "nearestAudioCandidateSec": 24.299683,
+      "distanceMs": 0.32
+    },
+    {
+      "selection": "distant",
+      "visualTimeSec": 5.633333,
+      "nearestAudioCandidateSec": 5.857234,
+      "distanceMs": 223.9
+    }
+  ],
+  "storyboardActualTimes": [
+    0.2,
+    1.2,
+    2.2,
+    3.1,
+    4.066667,
+    5.266667,
+    6.4,
+    7.533333,
+    8.6,
+    9.7,
+    10.966667,
+    12.3,
+    13.6,
+    15.0,
+    16.3,
+    17.6,
+    19.0,
+    21.0,
+    23.033333,
+    25.3
+  ],
+  "primaryAudioCandidateCount": 156
+}
