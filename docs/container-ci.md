@@ -1,15 +1,15 @@
 # Kenangin: Docker, CI, dan rencana CD
 
 Folder kerja: `C:\Users\VICTUS\noitsume.github.io`.
-Branch persiapan: `docker-ci`.
+Branch persiapan CI: `docker-ci` (sudah di-merge). Branch lanjutan Docker Hub: `docker-publish`.
 
 ## Status persiapan
 
 - Dockerfile dan `compose.yaml` lama tetap untuk development (`next dev`).
 - `Dockerfile.production` membangun aplikasi dengan `next build`, lalu menjalankan hasil standalone menggunakan Node 22.
-- `.github/workflows/ci.yml` memeriksa kode dan menguji startup image. Workflow baru berjalan di GitHub setelah file dikirim ke repo dan Actions diizinkan.
-- Belum ada publikasi image ke Docker Hub atau deploy otomatis. Target yang dipilih adalah server, tetapi server belum tersedia.
-- Perubahan lokal CSRF dan tes CSRF yang sudah ada dipertahankan. Review dan sertakan perubahan tersebut saat menyiapkan commit; CI di GitHub hanya dapat menguji berkas yang sudah masuk commit.
+- CI telah diaktifkan melalui [PR #1](https://github.com/noitsume/noitsume.github.io/pull/1). [CI pada main berhasil](https://github.com/noitsume/noitsume.github.io/actions/runs/40731643694) untuk commit `84ce74c345fc4612d22d57655a1515e9b3b4c59d`.
+- Job `publish-dockerhub` disiapkan untuk `hwrdfarr/kenangin`, mengikuti [panduan Docker Hub](dockerhub.md). Publikasi aktual masih memerlukan pengaturan Actions dan merge perubahan berikutnya.
+- Deploy otomatis ke server belum dibuat; server belum tersedia. Perbaikan CSRF dan tesnya sudah termasuk PR #1.
 
 Validasi lokal pada 28 Oktober 2026: lint, 74/74 tes, dan TypeScript lulus dalam Docker dengan Node 22.23.4; build produksi berhasil; container mencapai status `healthy`; halaman login, aset JavaScript, dan endpoint health merespons HTTP 200. Runtime memakai user non-root dan image tidak berisi `.env.local`. Container sementara untuk pemeriksaan sudah dihapus. Container development lama tetap berjalan. Validasi ini belum mencakup login nyata, upload, operasi layanan cloud, atau eksekusi workflow di GitHub.
 
@@ -25,7 +25,7 @@ flowchart LR
     F --> G[Periksa HTTP halaman login]
 ```
 
-Workflow dipicu oleh push ke `main`, `development`, atau `docker-ci`, dan pull request ke `main` atau `development`. Workflow menggunakan runner Ubuntu milik GitHub. Pemeriksaan aplikasi dijalankan **di dalam container Docker**; tidak perlu memasang runner GitHub Actions di laptop/server aplikasi.
+Workflow dipicu oleh push ke `main`, `development`, `docker-ci`, atau `docker-publish`, dan pull request ke `main` atau `development`. Workflow menggunakan runner Ubuntu milik GitHub. Pemeriksaan aplikasi dijalankan **di dalam container Docker**; tidak perlu memasang runner GitHub Actions di laptop/server aplikasi. Job publikasi hanya berjalan setelah pemeriksaan berhasil, pada push atau pemicu manual di `main`.
 
 `next typegen` dijalankan sebelum `tsc` agar checkout bersih memiliki tipe route dan `next-env.d.ts`. Pemeriksaan yang gagal menghentikan tahap berikutnya. Tes menggunakan mock; CI ini tidak memerlukan private key Firebase, token B2, atau Gemini.
 
@@ -110,10 +110,10 @@ Merge main → CI lulus → build image rilis → push Docker Hub
 
 Masih perlu ditentukan/dikonfigurasi:
 
-1. Akun dan repository Docker Hub tim, serta token push yang disimpan sebagai GitHub Actions secret.
+1. Repository Docker Hub sudah ditentukan: [hwrdfarr/kenangin](https://hub.docker.com/r/hwrdfarr/kenangin). Token push perlu disimpan sebagai GitHub Actions secret.
 2. Konfigurasi Firebase Web dan URL aplikasi untuk build rilis.
 3. Koneksi deploy ke server serta penyimpanan rahasia runtime di server.
-4. Workflow publish/deploy, pemeriksaan hasil deploy, dan cara kembali ke image sebelumnya.
+4. Aktifkan job publish yang disiapkan, lalu buat workflow deploy, pemeriksaan hasil deploy, dan cara kembali ke image sebelumnya.
 
 Mengunggah image ke Docker Hub saja belum memperbarui aplikasi di server. Jangan mengklaim deployment otomatis selesai sebelum pembaruan container di server berhasil didemonstrasikan.
 
