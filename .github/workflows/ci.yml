@@ -1,0 +1,59 @@
+name: CI - Test and Docker
+
+on:
+  push:
+    branches: [main, development, docker-ci]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Lint, unit tests, and TypeScript in Node 22
+        run: docker build --file Dockerfile.production --target checks --tag kenangin:checks .
+
+      # CI hanya membuktikan build/startup; kredensial layanan tidak dibutuhkan.
+      # Image rilis nanti harus dibangun dengan NEXT_PUBLIC_* milik server tujuan.
+      - name: Build production image
+        run: docker build --file Dockerfile.production --tag kenangin:ci .
+
+      - name: Check container startup
+        shell: bash
+        run: |
+          docker run --detach --name kenangin-ci kenangin:ci
+          for attempt in {1..30}; do
+            status=$(docker inspect --format '{{.State.Health.Status}}' kenangin-ci)
+            if [ "$status" = healthy ]; then
+              echo 'Production container is healthy.'
+              exit 0
+            fi
+            if [ "$status" = unhealthy ]; then
+              break
+            fi
+            sleep 2
+          done
+          echo 'Container did not become healthy within 60 seconds.' >&2
+          exit 1
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs --tail 100 kenangin-ci || true
+
+      - name: Remove test container
+        if: always()
+        run: docker rm --force kenangin-ci 2>/dev/null || true

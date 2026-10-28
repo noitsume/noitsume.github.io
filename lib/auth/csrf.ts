@@ -20,8 +20,11 @@ export function assertSameOrigin(request: NextRequest) {
     throw new ApiError("INVALID_ORIGIN", "Origin request tidak tersedia.", 403);
   }
 
-  const requestOrigin = new URL(request.url).origin;
-  if (origin !== requestOrigin) {
+  // Docker's bind address can differ from the URL opened in the browser.
+  // Trust the configured app origin, never caller-controlled forwarded headers.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const requestOrigin = new URL(appUrl || request.url).origin;
+  if (origin === "null" || origin !== requestOrigin) {
     throw new ApiError("INVALID_ORIGIN", "Origin request tidak diizinkan.", 403);
   }
 }

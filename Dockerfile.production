@@ -1,0 +1,40 @@
+FROM node:22-alpine AS dependencies
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+FROM dependencies AS source
+COPY . .
+
+# CI menjalankan pemeriksaan dalam Node 22 yang sama dengan aplikasi.
+FROM source AS checks
+RUN npm run lint
+RUN npm test
+RUN npx --no-install next typegen && npm run typecheck
+
+FROM source AS builder
+# Hanya konfigurasi publik browser. Jangan tambahkan private key/token di sini.
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ARG NEXT_PUBLIC_FIREBASE_API_KEY
+ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ARG NEXT_PUBLIC_FIREBASE_APP_ID
+ENV NODE_ENV=production
+RUN npm run build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/public ./public
+USER node
+EXPOSE 3000
+# Ini pemeriksaan HTTP aplikasi, bukan pengujian Firebase/B2/Gemini.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/login', {signal: AbortSignal.timeout(4000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+CMD ["node", "server.js"]
