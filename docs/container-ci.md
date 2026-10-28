@@ -1,7 +1,7 @@
 # Kenangin: Docker, CI, dan rencana CD
 
 Folder kerja: `C:\Users\VICTUS\noitsume.github.io`.
-Branch persiapan: `codex/container-ci`.
+Branch persiapan: `docker-ci`.
 
 ## Status persiapan
 
@@ -25,7 +25,7 @@ flowchart LR
     F --> G[Periksa HTTP halaman login]
 ```
 
-Workflow dipicu oleh push ke `main`, `development`, atau `codex/**`, dan pull request ke `main` atau `development`. Workflow menggunakan runner Ubuntu milik GitHub. Pemeriksaan aplikasi dijalankan **di dalam container Docker**; tidak perlu memasang runner GitHub Actions di laptop/server aplikasi.
+Workflow dipicu oleh push ke `main`, `development`, atau `docker-ci`, dan pull request ke `main` atau `development`. Workflow menggunakan runner Ubuntu milik GitHub. Pemeriksaan aplikasi dijalankan **di dalam container Docker**; tidak perlu memasang runner GitHub Actions di laptop/server aplikasi.
 
 `next typegen` dijalankan sebelum `tsc` agar checkout bersih memiliki tipe route dan `next-env.d.ts`. Pemeriksaan yang gagal menghentikan tahap berikutnya. Tes menggunakan mock; CI ini tidak memerlukan private key Firebase, token B2, atau Gemini.
 
