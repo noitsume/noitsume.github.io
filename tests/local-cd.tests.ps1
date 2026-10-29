@@ -132,3 +132,8 @@ try {
     if ($resolvedFixtureRoot -ne $expectedFixtureRoot -or -not $resolvedFixtureRoot.StartsWith($safePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Unexpected fixture cleanup path.' }
     Remove-Item -LiteralPath $resolvedFixtureRoot -Recurse -Force
 }
+
+# Expected Docker failures leave a simulated nonzero exit code. GitHub Actions
+# reads LASTEXITCODE after the script; clear it only once all assertions and
+# cleanup have succeeded, so actual test failures still fail the workflow.
+$global:LASTEXITCODE = 0
