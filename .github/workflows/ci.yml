@@ -2,7 +2,7 @@ name: CI - Test and Docker
 
 on:
   push:
-    branches: [main, development, docker-ci, docker-publish]
+    branches: [main, development, docker-ci, docker-publish, local-cd]
   pull_request:
     branches: [main, development]
   workflow_dispatch:
@@ -26,6 +26,10 @@ jobs:
 
       - name: Lint, unit tests, and TypeScript in Node 22
         run: docker build --file Dockerfile.production --target checks --tag kenangin:checks .
+
+      - name: Test local CD recovery behavior
+        shell: pwsh
+        run: ./tests/local-cd.tests.ps1
 
       # CI hanya membuktikan build/startup; kredensial layanan tidak dibutuhkan.
       # Image rilis nanti harus dibangun dengan NEXT_PUBLIC_* milik server tujuan.
