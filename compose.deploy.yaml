@@ -1,0 +1,10 @@
+name: kenangin-deploy
+services:
+  kenangin:
+    image: ${KENANGIN_DEPLOY_IMAGE:-hwrdfarr/kenangin:latest}
+    env_file:
+      - .env.local
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    stop_grace_period: 30s

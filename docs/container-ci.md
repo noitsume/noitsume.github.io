@@ -1,15 +1,15 @@
 # Kenangin: Docker, CI, dan rencana CD
 
 Folder kerja: `C:\Users\VICTUS\noitsume.github.io`.
-Branch persiapan CI: `docker-ci` (sudah di-merge). Branch lanjutan Docker Hub: `docker-publish`.
+Branch CI `docker-ci` dan publikasi `docker-publish` sudah di-merge. Branch lanjutan CD laptop: `local-cd`.
 
 ## Status persiapan
 
 - Dockerfile dan `compose.yaml` lama tetap untuk development (`next dev`).
 - `Dockerfile.production` membangun aplikasi dengan `next build`, lalu menjalankan hasil standalone menggunakan Node 22.
 - CI telah diaktifkan melalui [PR #1](https://github.com/noitsume/noitsume.github.io/pull/1). [CI pada main berhasil](https://github.com/noitsume/noitsume.github.io/actions/runs/40731643694) untuk commit `84ce74c345fc4612d22d57655a1515e9b3b4c59d`.
-- Job `publish-dockerhub` disiapkan untuk `hwrdfarr/kenangin`, mengikuti [panduan Docker Hub](dockerhub.md). Publikasi aktual masih memerlukan pengaturan Actions dan merge perubahan berikutnya.
-- Deploy otomatis ke server belum dibuat; server belum tersedia. Perbaikan CSRF dan tesnya sudah termasuk PR #1.
+- Job `publish-dockerhub` untuk `hwrdfarr/kenangin` telah berhasil melalui [workflow ini](https://github.com/noitsume/noitsume.github.io/actions/runs/40745368660), mengikuti [panduan Docker Hub](dockerhub.md).
+- Target deploy dipilih **laptop Windows dengan Docker Desktop**. Konfigurasi dan skrip pembaruan otomatis tersedia pada [panduan CD lokal](local-cd.md). Perbaikan CSRF dan tesnya sudah termasuk PR #1.
 
 Validasi lokal pada 28 Oktober 2026: lint, 74/74 tes, dan TypeScript lulus dalam Docker dengan Node 22.23.4; build produksi berhasil; container mencapai status `healthy`; halaman login, aset JavaScript, dan endpoint health merespons HTTP 200. Runtime memakai user non-root dan image tidak berisi `.env.local`. Container sementara untuk pemeriksaan sudah dihapus. Container development lama tetap berjalan. Validasi ini belum mencakup login nyata, upload, operasi layanan cloud, atau eksekusi workflow di GitHub.
 
@@ -25,7 +25,7 @@ flowchart LR
     F --> G[Periksa HTTP halaman login]
 ```
 
-Workflow dipicu oleh push ke `main`, `development`, `docker-ci`, atau `docker-publish`, dan pull request ke `main` atau `development`. Workflow menggunakan runner Ubuntu milik GitHub. Pemeriksaan aplikasi dijalankan **di dalam container Docker**; tidak perlu memasang runner GitHub Actions di laptop/server aplikasi. Job publikasi hanya berjalan setelah pemeriksaan berhasil, pada push atau pemicu manual di `main`.
+Workflow dipicu oleh push ke `main`, `development`, `docker-ci`, `docker-publish`, atau `local-cd`, dan pull request ke `main` atau `development`. Workflow menggunakan runner Ubuntu milik GitHub. Pemeriksaan aplikasi dijalankan **di dalam container Docker**; tidak perlu memasang runner GitHub Actions di laptop/server aplikasi. Job publikasi hanya berjalan setelah pemeriksaan berhasil, pada push atau pemicu manual di `main`. Pengujian pemulihan CD menggunakan PowerShell dengan Docker tiruan.
 
 `next typegen` dijalankan sebelum `tsc` agar checkout bersih memiliki tipe route dan `next-env.d.ts`. Pemeriksaan yang gagal menghentikan tahap berikutnya. Tes menggunakan mock; CI ini tidak memerlukan private key Firebase, token B2, atau Gemini.
 
@@ -90,6 +90,7 @@ Firebase Admin private key, B2 application key, dan Gemini API key hanya diberik
 | --- | --- | --- |
 | Container Kenangin development | Konfigurasi lama | Host 3000 → container TCP 3000 |
 | Container Kenangin produksi lokal | Konfigurasi baru untuk dicoba | Host 127.0.0.1:3000 → container TCP 3000 |
+| Container deployment dari Docker Hub | `compose.deploy.yaml` | Host 127.0.0.1:3000 → container TCP 3000 |
 | Container pemeriksaan CI | Sementara selama workflow | Tidak memublikasikan port ke host |
 | Firebase, B2, Gemini | Layanan eksternal, bukan container lokal | Koneksi keluar HTTPS TCP 443 |
 
@@ -97,23 +98,23 @@ Build stages `dependencies`, `source`, `checks`, `builder`, dan `runner` adalah 
 
 Healthcheck memeriksa halaman login. `/api/health` memeriksa kelengkapan/format konfigurasi; keduanya tidak membuktikan koneksi cloud atau seluruh fitur bekerja.
 
-## Yang diperlukan untuk CD ke server
+## CD ke laptop sebagai server lokal
 
-Siapkan server/VM Linux yang dapat diakses untuk deploy, Docker Engine beserta Compose, alamat/domain aplikasi, dan HTTPS untuk akses melalui jaringan. Aplikasi produksi menggunakan cookie Secure. URL publik harus sudah ditentukan sebelum membangun image rilis.
+Pilihan akhir adalah laptop dengan Docker Desktop. Gunakan `http://localhost:3000`, `compose.deploy.yaml`, dan `scripts/deploy-local.ps1`. Image dari Docker Hub telah dideploy; lihat [panduan CD lokal](local-cd.md) untuk mengaktifkan worker, melihat log, menghentikan pembaruan, dan kembali ke development.
 
-Setelah server tersedia, lanjutkan alur:
+Alur yang digunakan:
 
 ```text
-Merge main → CI lulus → build image rilis → push Docker Hub
-           → deploy ke server → periksa container → uji fitur
+Merge main → CI lulus → build image → push Docker Hub
+           → worker laptop menarik image → preflight → ganti container
 ```
 
-Masih perlu ditentukan/dikonfigurasi:
+Yang masih perlu dilengkapi untuk penyerahan tugas:
 
-1. Repository Docker Hub sudah ditentukan: [hwrdfarr/kenangin](https://hub.docker.com/r/hwrdfarr/kenangin). Token push perlu disimpan sebagai GitHub Actions secret.
-2. Konfigurasi Firebase Web dan URL aplikasi untuk build rilis.
-3. Koneksi deploy ke server serta penyimpanan rahasia runtime di server.
-4. Aktifkan job publish yang disiapkan, lalu buat workflow deploy, pemeriksaan hasil deploy, dan cara kembali ke image sebelumnya.
+1. Kirim konfigurasi CD lokal melalui PR dari `local-cd` ke `main`.
+2. Demonstrasikan satu pembaruan commit baru sampai container laptop berubah otomatis.
+3. Uji fitur langsung dan rekam hasilnya, bukan hanya hasil healthcheck.
+4. Lengkapi laporan dan satu video maksimal 15 menit dengan pembagian penjelasan ketiga anggota.
 
 Mengunggah image ke Docker Hub saja belum memperbarui aplikasi di server. Jangan mengklaim deployment otomatis selesai sebelum pembaruan container di server berhasil didemonstrasikan.
 

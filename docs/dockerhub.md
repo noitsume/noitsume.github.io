@@ -4,7 +4,7 @@ Repository image: [hwrdfarr/kenangin](https://hub.docker.com/r/hwrdfarr/kenangin
 Repository kode: [noitsume/noitsume.github.io](https://github.com/noitsume/noitsume.github.io).
 Branch perubahan ini: `docker-publish`.
 
-Validasi persiapan: sintaks YAML, ekspresi GitHub Actions, dan perintah shell telah lulus `actionlint` pada 29 Oktober 2026. Login dan push aktual belum dijalankan; keduanya memerlukan token serta konfigurasi repository berikut.
+Sintaks workflow lulus `actionlint`, dan publikasi aktual telah berhasil pada 29 Oktober 2026 melalui [workflow main ini](https://github.com/noitsume/noitsume.github.io/actions/runs/40745368660). Pengaturan berikut mendokumentasikan setup yang digunakan. Tahap berikutnya adalah [CD lokal di laptop](local-cd.md).
 
 Perintah contoh dari Docker Hub, `docker push hwrdfarr/kenangin:tagname`, memakai `tagname` sebagai contoh tag. Workflow ini membuat tag `latest` serta `sha-<commit Git lengkap>`. Tidak perlu menjalankan perintah contoh itu sebelum image dibangun dan diberi tag yang sesuai.
 
@@ -41,7 +41,7 @@ Di halaman Actions settings yang sama, pilih **Variables → New repository vari
 
 Salin nilai saja, tanpa nama variabel, tanda `=`, atau tanda kutip pembungkus. Kelima nilai ini memang konfigurasi publik yang digunakan browser. Private key Firebase Admin, token B2, dan token Gemini tidak dimasukkan ke build image atau repository variables ini.
 
-Karena server belum tersedia, untuk percobaan image lokal boleh isi `NEXT_PUBLIC_APP_URL` dengan `http://localhost:3000`. Image tersebut ditujukan untuk percobaan lokal. Ketika alamat HTTPS server tersedia, ganti variable ini lalu bangun/publikasikan ulang image sebelum deploy. Mengganti URL hanya saat runtime tidak memperbarui nilai yang sudah ditanamkan pada build Next.js.
+Target deployment yang dipilih adalah laptop, sehingga `NEXT_PUBLIC_APP_URL` menggunakan `http://localhost:3000`. Jika nanti berpindah ke server dengan alamat HTTPS, ganti variable ini lalu bangun/publikasikan ulang image sebelum deploy. Mengganti URL hanya saat runtime tidak memperbarui nilai yang sudah ditanamkan pada build Next.js.
 
 ## 4. Kirim perubahan workflow melalui pull request
 
@@ -83,7 +83,7 @@ hwrdfarr/kenangin:sha-<commit Git lengkap>
 
 Image dibangun untuk `linux/amd64`, sesuai runner Ubuntu x64. Jika nanti memakai server ARM, target build perlu disesuaikan sebelum deploy.
 
-**Publikasi image belum men-deploy aplikasi ke server.** Rahasia runtime, server, HTTPS, dan langkah memperbarui container di server masih perlu disiapkan. Pemeriksaan startup hanya membuktikan halaman login merespons, belum membuktikan seluruh fitur cloud bekerja.
+**Publikasi image sendiri belum men-deploy aplikasi.** Target akhir proyek ini adalah laptop Windows dengan Docker Desktop; langkah deployment dan pembaruan otomatis dijelaskan di [CD lokal](local-cd.md). Rahasia runtime tetap berada di laptop. Pemeriksaan startup hanya membuktikan halaman login merespons, belum membuktikan seluruh fitur cloud bekerja.
 
 ## Referensi
 
