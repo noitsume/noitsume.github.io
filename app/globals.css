@@ -904,6 +904,8 @@ html[data-theme="light"] .brand-logo {
 
 .theme-toggle {
   overflow: hidden;
+  display: none;
+  
 }
 
 .theme-toggle__sun,
